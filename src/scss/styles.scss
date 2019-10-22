@@ -1,5 +1,9 @@
 /********** GENERIC STYLES **********/
-
+textarea, input {
+	&:focus {
+		outline:none;
+	}
+}
 
 
 
@@ -10,6 +14,7 @@ html, body, #app {
 	height:100%;
 	width:100%;
 	margin:0;
+	overflow:hidden;
 }
 
 #output-view {
