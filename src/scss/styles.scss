@@ -1,0 +1,37 @@
+/********** GENERIC STYLES **********/
+
+
+
+
+
+
+/********** SPECIFIC STYLES **********/
+html, body, #app {
+	height:100%;
+	width:100%;
+	margin:0;
+}
+
+#output-view {
+	height:60%;
+	width:100%;
+	background-color:#ddd;
+}
+
+#input-view {
+	height:40%;
+	width:100%;
+	background-color:#aaa;
+
+	textarea {
+		resize:none;
+		width:100%;
+		height:100%;
+		padding:2%;
+		border:none;
+		box-sizing: border-box;
+		background-color:transparent;
+		color:#fff;
+		font-size:1.4rem;
+	}
+}

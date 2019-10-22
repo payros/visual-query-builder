@@ -86,3 +86,8 @@ typings/
 
 # DynamoDB Local files
 .dynamodb/
+
+#React output files
+public/*.hot-update.j*
+public/bundle.js
+public/bundle.js.map
