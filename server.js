@@ -1,8 +1,13 @@
 const express = require("express")
+const { Pool } = require('pg')
+const app = express()
 require('dotenv').config()
-app = express()
+const env = process.env
+const pool = new Pool({
+  connectionString: env.DATABASE_URL
+})
 
-if(process.argv[2] && process.argv[2] === 'prod') {
+if(process.argv.length > 2 && process.argv[2] === 'prod') {
 	console.log("Running in prod!");
 } else {
 	const webpack = require('webpack');
@@ -13,6 +18,16 @@ if(process.argv[2] && process.argv[2] === 'prod') {
 }
 
 app.use(express.static('public'))
-// app.get('/hello', (req, res) => res.send("world"));
+
+app.get('/query', (req, res) => {
+	const constructedQuery = req.query.q + " LIMIT 1000"
+	console.log(constructedQuery)
+	pool.query(constructedQuery).then(rs => {
+		res.json(rs.rows)
+	}).catch(e => {
+		res.json([])
+		console.log(e)
+	})
+});
 
 app.listen(process.env.PORT,  () => console.log("Visual query builder listening!"));

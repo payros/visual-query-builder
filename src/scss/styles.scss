@@ -21,6 +21,31 @@ html, body, #app {
 	height:60%;
 	width:100%;
 	background-color:#ddd;
+
+	.MuiPaper-root {
+		height:90%;
+		width:80%;
+		position: relative;
+		top:5%;
+		margin:0 10%;
+		overflow-x:auto;
+		overflow-y:auto;
+	}
+
+	.MuiTableCell-root {
+		padding:10px 12px;
+	}
+
+	th, td {
+		font-size: 0.8rem;
+	}
+
+	th {
+		background-color:#bb0000;
+		color:#fff;
+	}
+
+
 }
 
 #input-view {
