@@ -20,14 +20,20 @@ if(process.argv.length > 2 && process.argv[2] === 'prod') {
 app.use(express.static('public'))
 
 app.get('/query', (req, res) => {
-	const constructedQuery = req.query.q + " LIMIT 1000"
+	const constructedQuery = req.query.q
 	console.log(constructedQuery)
-	pool.query(constructedQuery).then(rs => {
-		res.json(rs.rows)
-	}).catch(e => {
+	//Restrict to read queries - A bit naive, but it will do for now
+	if(constructedQuery.subString(0,6).toUpperCase() === "SELECT"){
+		pool.query(constructedQuery).then(rs => {
+			res.json(rs.rows)
+		}).catch(e => {
+			res.json([])
+			console.log(e)
+		})
+	} else {
 		res.json([])
-		console.log(e)
-	})
+	}
+
 });
 
 app.listen(process.env.PORT,  () => console.log("Visual query builder listening!"));
