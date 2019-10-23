@@ -20,10 +20,10 @@ if(process.argv.length > 2 && process.argv[2] === 'prod') {
 app.use(express.static('public'))
 
 app.get('/query', (req, res) => {
-	const constructedQuery = req.query.q
+	const constructedQuery = req.query.q + " LIMIT 1000"
 	console.log(constructedQuery)
 	//Restrict to read queries - A bit naive, but it will do for now
-	if(constructedQuery.subString(0,6).toUpperCase() === "SELECT"){
+	if(constructedQuery.substring(0,6).toUpperCase() === "SELECT"){
 		pool.query(constructedQuery).then(rs => {
 			res.json(rs.rows)
 		}).catch(e => {
