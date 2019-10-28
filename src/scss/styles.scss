@@ -8,7 +8,6 @@ textarea, input {
 
 
 
-
 /********** SPECIFIC STYLES **********/
 html, body, #app {
 	height:100%;
@@ -24,20 +23,15 @@ html, body, #app {
 
 	.MuiPaper-root {
 		height:90%;
-		width:80%;
+		width:90%;
 		position: relative;
 		top:5%;
-		margin:0 10%;
-		overflow-x:auto;
-		overflow-y:auto;
+		margin:0 5%;
 	}
 
-	.MuiTableCell-root {
-		padding:10px 12px;
-	}
-
-	th, td {
-		font-size: 0.8rem;
+	table {
+		border-radius:4px;
+		overflow: hidden;
 	}
 
 	th {

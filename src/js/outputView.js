@@ -1,7 +1,8 @@
 import React from 'react'
+import { Paper } from '@material-ui/core';
 import resultsStore from './resultsStore'
 import dispatcher from './dispatcher'
-import { Table, TableBody, TableCell, TableHead, TableRow, Paper } from '@material-ui/core';
+import { FlexTable, FlexHead, FlexBody, FlexRow } from './flexTable'
 
 class OutputView extends React.Component {
     render(){
@@ -23,28 +24,18 @@ class ResultsTable extends React.Component {
 		})
 	}
 
-	  componentDidMount() {
-	    const height = this.refs.paper.clientHeight;
-	    this.setState({ tableHeight:height });
-	  }
-
 	render(){
-			    console.log(this.state.tableHeight)
-		const headerValues = (this.state.results.length ? Object.keys(this.state.results[0]) : [])
-		const headers = headerValues.map(h => <TableCell align="left">{h}</TableCell>)
-		const rows = (this.state.results.length ? this.state.results : []).map(r => <TableRow>{headerValues.map(h => { return <TableCell align="left">{r[h]}</TableCell> })}</TableRow>)
-		return  <Paper ref="paper">
-			      <Table>
-			        <TableHead>
-			          <TableRow>
-			            {headers}
-			          </TableRow>
-			        </TableHead>
-			        <TableBody>
-			          {rows}
-			        </TableBody>
-			      </Table>
-			    </Paper>
+		let content;
+			const headerValues = (this.state.results.length ? Object.keys(this.state.results[0]) : [])
+			const headers = headerValues.map(h => <th className="flex-cell" align="left">{h}</th>)
+			const rows = (this.state.results.length ? this.state.results : []).map(r => headerValues.map(h => r[h]))
+			content = 	<FlexTable>
+							<FlexHead>
+					        	<FlexRow cells={headerValues} headCells={true}/>
+					        </FlexHead>
+					        <FlexBody rows={rows}/>
+				      	</FlexTable>							
+		return  <Paper>{content}</Paper>
 	}
 }
 

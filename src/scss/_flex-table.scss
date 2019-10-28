@@ -1,0 +1,54 @@
+/*** FLEX TABLE STYLES ***/
+.flex-table {
+	height:100%;
+}
+
+.flex-table, .flex-head, .flex-body {
+    display:flex;
+    flex-direction:column;
+    width:100%;
+}
+
+.flex-head {
+	flex: 0 0 auto;
+    font-weight:bold;
+    box-shadow:none;
+}
+
+.flex-body {
+	overflow-y:scroll;
+}
+
+.flex-row {
+    display:flex;
+    flex:0 0 auto;
+    list-style: none;
+    padding:0;
+    margin:0;
+    border-bottom:1px solid #eee;
+
+    &.sm-font > .flex-cell {
+    	font-size:0.7rem;
+    }
+
+    &.md-font > .flex-cell {
+    	font-size:0.9rem;
+    }
+
+    &.lg-font > .flex-cell {
+    	font-size:1.1rem;
+    }
+}
+
+.flex-cell {
+	flex:0 0 auto;
+    padding:0.5rem;
+    box-sizing: border-box;
+   	word-break: break-all;
+   	text-align: left;
+
+   	&:last-child {
+   		flex-grow:1;
+   		flex-shrink:1;
+   	}
+}
