@@ -91,3 +91,4 @@ typings/
 public/*.hot-update.j*
 public/bundle.js
 public/bundle.js.map
+public/fonts/
