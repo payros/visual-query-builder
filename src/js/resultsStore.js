@@ -6,22 +6,37 @@ class ResultsStore extends EventEmitter {
   constructor() {
     super()
     this.results = []
+    this.errorLog = ""
   }
 
   setResults(results) {
     this.results = results
-    this.emit("new-results")
+    this.emit("results-fetched")
+  }
+
+  setError(errorLog) {
+    this.errorLog = errorLog
+    this.emit("results-error")
   }
 
   getResults() {
     return this.results
   }
 
+  getErrorLog() {
+    return this.errorLog
+  }
+
   handleActions(action) {
     switch(action.type) {
         case "FETCH_RESULTS":
+            this.emit("results-loading")
             axios.get('/query', {params: { q:action.query }}).then(res => {
-                if(res.data) this.setResults(res.data)
+              if(res.data){
+                this.setResults(res.data)
+              }
+            }).catch(err => {
+              this.setError(err.response.data)
             })
             break
     }

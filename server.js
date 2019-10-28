@@ -28,11 +28,10 @@ app.get('/query', (req, res) => {
 		pool.query(constructedQuery).then(rs => {
 			res.json(rs.rows)
 		}).catch(e => {
-			res.json([])
-			console.log(e)
+			res.status(500).send(e.message)
 		})
 	} else {
-		res.json([])
+		res.status(500).send("This query is not supported")
 	}
 
 });

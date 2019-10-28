@@ -1,3 +1,10 @@
+/********** COLOR PALETTE **********/
+$primary-dark: #248EA6;
+$primary-light: #25C7D9;
+$secondary-dark: #F23030;
+$secondary-light: #F2762E;
+$accent: #F2D338;
+
 /********** GENERIC STYLES **********/
 textarea, input {
 	&:focus {
@@ -35,10 +42,23 @@ html, body, #app {
 	}
 
 	th {
-		background-color:#bb0000;
+		background-color:$primary-dark;
 		color:#fff;
 	}
 
+	#error-msg {
+		position: absolute;
+	    left: 0;
+	    right: 0;
+	    top: 50%;
+	    transform: translateY(-50%);
+	    margin: 0;
+	    padding: 30px 0;
+		font: 200 2rem sans-serif;
+		text-align: center;
+		color: $secondary-dark;
+		background-color: lighten($secondary-dark, 35%);
+	}
 
 }
 
