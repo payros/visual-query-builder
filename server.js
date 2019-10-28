@@ -36,4 +36,21 @@ app.get('/query', (req, res) => {
 
 });
 
+
+app.get('/get-schema', (req, res) => {
+	const queryStr = "SELECT table_name,column_name FROM pg_catalog.pg_tables tb LEFT JOIN information_schema.COLUMNS cl ON tb.tablename=cl.table_name WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema' ORDER BY table_name, column_name";
+	console.log(queryStr)
+
+	pool.query(queryStr).then(rs => {
+		res.json(rs.rows.reduce((obj, row) => {
+			if(!obj.hasOwnProperty(row.table_name)) obj[row.table_name] = []
+			obj[row.table_name].push(row.column_name)
+			return obj
+		}, {}))
+	}).catch(e => {
+		res.status(500).send(e.message)
+	})
+
+});
+
 app.listen(process.env.PORT,  () => console.log("Visual query builder listening!"));

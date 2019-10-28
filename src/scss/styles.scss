@@ -6,6 +6,10 @@ $secondary-light: #F2762E;
 $accent: #F2D338;
 
 /********** GENERIC STYLES **********/
+* {
+	font-family: 'Roboto', sans-serif;
+}
+
 textarea, input {
 	&:focus {
 		outline:none;
@@ -14,13 +18,63 @@ textarea, input {
 
 
 
-
 /********** SPECIFIC STYLES **********/
-html, body, #app {
+html, body {
 	height:100%;
 	width:100%;
 	margin:0;
 	overflow:hidden;
+}
+
+body {
+	display: flex;
+}
+
+main {
+	width:80%;
+}
+
+sidebar {
+	position: relative;
+	width:20%;
+	background-color:#eee; 
+	padding:15px 20px;
+	box-shadow: -1px 0 0px rgba(0,0,0,0.15);
+
+	h3 {
+		font: 200 1.8rem;
+		color:#999;
+		margin:0;
+		padding:10px 0;
+	}
+
+	.table-list {
+		list-style: none;
+		padding:0;
+		
+		.table-title {
+			color:#999;
+			margin-bottom: 4px;
+			font-style: italic;
+			font-weight: 200;
+		}
+	}
+
+	.column-list {
+		list-style: none;
+		padding-left:20px;
+
+		> li {
+			background-color: $primary-dark;
+		    color: #fff;
+		    display: inline-block;
+		    padding: 4px 12px;
+		    border-radius: 20px;
+		    font-size: 0.8rem;
+		    margin: 4px;
+		    box-shadow: 1px 1px 1px rgba(0,0,0,0.15);
+		}
+	}
 }
 
 #output-view {
@@ -44,6 +98,7 @@ html, body, #app {
 	th {
 		background-color:$primary-dark;
 		color:#fff;
+		font-weight: 400;
 	}
 
 	#error-msg {

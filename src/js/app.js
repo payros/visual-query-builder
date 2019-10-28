@@ -4,13 +4,17 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 import InputView from './inputView'
 import OutputView from './outputView'
+import SchemaView from './schemaView'
 
 
 class App extends React.Component {
     render(){ 
         return  <React.Fragment>
-        			<OutputView/>
-        			<InputView/>
+        			<main>
+	        			<OutputView/>
+	        			<InputView/>
+        			</main>
+        			<SchemaView/>
         		</React.Fragment>
     }
 }
