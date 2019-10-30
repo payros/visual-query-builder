@@ -1,4 +1,5 @@
 import React from 'react'
+import queryStore from './queryStore'
 import dispatcher from './dispatcher'
 
 class InputView extends React.Component {
@@ -13,13 +14,33 @@ class SqlForm extends React.Component {
     constructor(props) {
         super(props);
         this.requestTimeout = null;
-        this.state = {value: 'SELECT * FROM flights'};
+        this.state = { value:queryStore.getQueryString() };
         this.delay = 1000;
     }
 
+    componentWillMount(){
+       queryStore.on("query-updated", () => {
+            this.setState({value:queryStore.getQueryString()}, this.executeQuery)
+        })
+    }
+
     componentDidMount() {
-        if(this.requestTimeout) clearTimeout(this.requestTimeout);
-        this.requestTimeout = setTimeout(() => this.executeQuery(), this.delay);
+        if(this.state.value.length){
+            if(this.requestTimeout) clearTimeout(this.requestTimeout);
+            this.requestTimeout = setTimeout(() => this.executeQuery(), this.delay);
+        }
+    }
+
+    handleEvents(ev){
+        switch(ev.type){
+            case "COLUMN_DROP":
+                this.handleDrop(ev.column)
+                break
+        }
+    }
+
+    handleDrop(columnString){
+
     }
 
     handleChange(event) {

@@ -1,6 +1,7 @@
 import React from 'react'
 import { Paper } from '@material-ui/core';
 import resultsStore from './resultsStore'
+import queryStore from './queryStore'
 import dispatcher from './dispatcher'
 import { FlexTable, FlexHead, FlexBody, FlexRow } from './flexTable'
 import Utils from './utils'
@@ -17,10 +18,13 @@ class OutputView extends React.Component {
 class ResultsTable extends React.Component {
 	constructor() {
     	super()
-    	this.state = {results:[], loading:true, error:false, errorLog:""}
+    	this.state = {results:[], loading:true, error:false, errorLog:"", dragging:false}
   	}
 
 	componentWillMount(){
+		//Allows this component to listen to events
+        dispatcher.register(this.handleEvents.bind(this))
+
 		resultsStore.on("results-loading", () => {
 			this.setState({error:false, loading:true, results:[]})
 		})
@@ -32,6 +36,31 @@ class ResultsTable extends React.Component {
 		})
 	}
 
+	handleEvents(ev){
+        switch(ev.type){
+            case "COLUMN_DRAG_START":
+                this.handleDrag(true)
+                break
+            case "COLUMN_DRAG_END":
+                this.handleDrag(false)
+                break
+        }
+    }
+
+   	handleDragOver(ev){
+   		ev.preventDefault();
+   	}
+
+
+    handleDrag(isDragging){
+    	this.setState({ dragging:isDragging })
+    }
+
+    handleDrop(ev){
+    	const column = ev.dataTransfer.getData('column')
+    	dispatcher.dispatch({ type:'COLUMN_DROP', column:column })
+    }
+
 	render(){
 		let content;
 		if(this.state.loading){
@@ -40,7 +69,6 @@ class ResultsTable extends React.Component {
 			content = <p id="error-msg">{this.state.errorLog}</p>
 		} else {
 			const headerValues = (this.state.results.length ? Object.keys(this.state.results[0]) : [])
-			const headers = headerValues.map(h => <th className="flex-cell" align="left">{h}</th>)
 			const rows = (this.state.results.length ? this.state.results : []).map(r => headerValues.map(h => r[h]))
 			content = 	<FlexTable>
 							<FlexHead>
@@ -49,7 +77,10 @@ class ResultsTable extends React.Component {
 					        <FlexBody rows={rows}/>
 				      	</FlexTable>							
 		}
-		return  <Paper>{content}</Paper>
+		return  <Paper>
+					{this.state.dragging && <div className="drop-curtain" onDragOver={this.handleDragOver} onDrop={(ev) => this.handleDrop(ev)}><p>Drop to Add Column to Query</p></div>}
+					{content}
+				</Paper>
 	}
 }
 
