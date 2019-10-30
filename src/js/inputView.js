@@ -1,5 +1,6 @@
 import React from 'react'
 import queryStore from './queryStore'
+import resultsStore from './resultsStore'
 import dispatcher from './dispatcher'
 
 class InputView extends React.Component {
@@ -22,6 +23,12 @@ class SqlForm extends React.Component {
        queryStore.on("query-updated", () => {
             this.setState({value:queryStore.getQueryString()}, this.executeQuery)
         })
+        resultsStore.on("results-fetched", () => {
+            dispatcher.dispatch({
+               type:'UPDATE_QUERY',
+               query:this.state.value
+            })
+        })
     }
 
     componentDidMount() {
@@ -37,10 +44,6 @@ class SqlForm extends React.Component {
                 this.handleDrop(ev.column)
                 break
         }
-    }
-
-    handleDrop(columnString){
-
     }
 
     handleChange(event) {

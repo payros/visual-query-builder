@@ -10,21 +10,6 @@ class QueryStore extends EventEmitter {
   constructor() {
     super()
     this.query = null
-    let tree = parser.parse('SELECT mid, fid FROM carriers NATURAL JOIN flights NATURAL JOIN months')
-
-    const currColumns = tree.value.selectItems.value.reduce((arr, curr) => {
-      if(curr.type === "Identifier"){
-        let vals = curr.value.split(".")
-        arr.push(vals[vals.length-1])
-      } 
-      return arr
-    },[])
-
-    console.log(tree)
-    let currTables = ast.getTables(tree.value, [])
-    // ast.value.selectItems.value.push({alias:null, hasAs:null, type:"Identifier", value:"origin_city"})
-    console.log(currTables)
-    console.log(parser.stringify(tree))
   }
 
   addColumn(col) {
@@ -44,7 +29,6 @@ class QueryStore extends EventEmitter {
 
       //Check if the table is already on the 'from' list
       if(currTables.indexOf(table) === -1) {
-        console.log(ast.addNaturalJoinTable(this.query, table))
         this.query = ast.addNaturalJoinTable(this.query, table)
       }
     }
@@ -52,8 +36,8 @@ class QueryStore extends EventEmitter {
     this.emit("query-updated");
   }
 
-  parseQuery(queryStr){ //Assumes the query is valid
-
+  parseQuery(queryStr){ //Assumes the query is valid or empty
+    this.query = queryStr.length ? parser.parse(queryStr) : null
   }
 
   getQueryString() {
@@ -67,9 +51,12 @@ class QueryStore extends EventEmitter {
   handleActions(action) {
     switch(action.type) {
         case "COLUMN_DROP":
-          console.log("column drop", action.column)
-            this.addColumn(action.column)
-            break
+          this.addColumn(action.column)
+          break
+
+        case "UPDATE_QUERY":
+          this.parseQuery(action.query)
+          break
     }
   }
 }
