@@ -63,7 +63,7 @@ export default  {
                 node.left = recurse(node.left)
                 break
               case 'TableFactor':
-                let leftChild = JSON.parse(JSON.stringify(tree))
+                let leftChild = JSON.parse(JSON.stringify(node))
                 let rightChild = { alias:null, hasAs:null, indexHintOpt:null, partition:null, type:"TableFactor", value:{type: "Identifier", value: table} }
                 node = {
                     type:"NaturalJoinTable",
