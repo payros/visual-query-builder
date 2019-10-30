@@ -41,24 +41,29 @@ export default  {
     },
     //Recursively add table via natural join to the tree
     addNaturalJoinTable(tree, table){
-        let newTree = Object.assign({}, tree)
-        recurse(newTree.value)
+        let newTree = JSON.parse(JSON.stringify(tree))
+        newTree.value = recurse(newTree.value)
+        return newTree
 
         function recurse(node){
-            if(!node) return
+            if(!node) return node
             const nodeType = node.type.substring(node.type.length-9) === "JoinTable" ? "JoinTable" : node.type
             switch(nodeType){
               case 'TableReference':
               case 'SubQuery':
-                return recurse(node.value)
+                node.value = recurse(node.value)
+                break
               case 'Select':
-                return recurse(node.from)
+                node.from = recurse(node.from)
+                break
               case 'TableReferences':
-                return recurse(node.value[0])
+                node.value[0] = recurse(node.value[0])
+                break
               case 'JoinTable':
-                return recurse(node.left)
+                node.left = recurse(node.left)
+                break
               case 'TableFactor':
-                let leftChild = Object.assign({}, node)
+                let leftChild = JSON.parse(JSON.stringify(tree))
                 let rightChild = { alias:null, hasAs:null, indexHintOpt:null, partition:null, type:"TableFactor", value:{type: "Identifier", value: table} }
                 node = {
                     type:"NaturalJoinTable",
@@ -67,11 +72,9 @@ export default  {
                     leftRight:null,
                     outOpt:null
                 }
-              default:
-                return
+                break
             }
-        }
-
-        return newTree  
+            return node
+        } 
     }
 }

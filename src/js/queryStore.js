@@ -44,6 +44,7 @@ class QueryStore extends EventEmitter {
 
       //Check if the table is already on the 'from' list
       if(currTables.indexOf(table) === -1) {
+        console.log(ast.addNaturalJoinTable(this.query, table))
         this.query = ast.addNaturalJoinTable(this.query, table)
       }
     }
