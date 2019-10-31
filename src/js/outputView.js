@@ -18,7 +18,7 @@ class OutputView extends React.Component {
 class ResultsTable extends React.Component {
 	constructor() {
     	super()
-    	this.state = {results:[], loading:true, error:false, errorLog:"", dragging:false}
+    	this.state = {results:[], loading:false, error:false, errorLog:"", dragging:false}
   	}
 
 	componentWillMount(){

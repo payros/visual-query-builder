@@ -1,16 +1,24 @@
 export default  {
-    //Get all columns in a select query ast tree
+    //Get all columns in a select query ast tree without the table. prefix
     getColumns:(tree, columnList) => {
-        return tree.value.selectItems.value.reduce((arr, curr) => {
+        //This will get you a list of all literal columns
+        columnList = tree.value.selectItems.value.reduce((arr, curr) => {
           if(curr.type === "Identifier"){
             let vals = curr.value.split(".")
             arr.push(vals[vals.length-1])
+            //Use this instead to preserve the prefix to check for start
+            // arr.push(curr.value)
           } 
           return arr
         }, columnList)
+        //TO Expand * into the literal column names
+        //Check for * and table.* and expand
+        //Return a list of all expanded columns without the prefix
+        return columnList
     },
-    //Recursively get all tables in a select query ast tree
+    //Recursively get all tables and alias in a select query ast tree
     getTables:(tree, tableList) => {
+        console.log("this is the tree", tree)
         return recurse(tree.value, tableList)
 
         function recurse(node, tableList){
@@ -34,13 +42,20 @@ export default  {
             }
         }      
     },
-    addSelectColumn(tree, column){
+    addSelectColumn:(tree, column) => {
         let newTree = Object.assign({}, tree)
         newTree.value.selectItems.value.push({type:"Identifier", value:column, alias:null, hasAs:null})
+        //TODO * Optimization
+        //Get all columns
+        //Get all tables
+        //Get the schema
+        //Check each table against all columns to see if it's complete
+        //Replace single table columns with table.*
+        //Potentially replace all table.* with a single *
         return newTree
     },
     //Recursively add table via natural join to the tree
-    addNaturalJoinTable(tree, table){
+    addNaturalJoinTable:(tree, table) => {
         let newTree = JSON.parse(JSON.stringify(tree))
         newTree.value = recurse(newTree.value)
         return newTree
@@ -76,5 +91,10 @@ export default  {
             }
             return node
         } 
+    },
+    where:(column, operator, value) => {
+
+        
     }
+
 }
