@@ -22,7 +22,7 @@ class QueryStore extends EventEmitter {
       const currTables = ast.getTables(this.query, []).filter((el, i, self) => i === self.indexOf(el)) //Remove possible duplicates
       const currColumns = ast.getColumns(this.query, []).filter((el, i, self) => i === self.indexOf(el)) //Remove possible duplicates
 
-      //Check if the column is already list on the 'select' list 
+      //Check if the column is already listed on the 'select' list 
       if(currColumns.indexOf(column) === -1) {
         this.query = ast.addSelectColumn(this.query, column)
       }
