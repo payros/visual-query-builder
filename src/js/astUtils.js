@@ -53,15 +53,14 @@ astUtils.getTables = function(tree, tableList){
 astUtils.isColInStar = function(tree, column) {
     // if column is from same table that is in FROM, and * or <table>.* is present then return true
     let currColumns = astUtils.getColumns(tree, [])
-    //return false if * isn't in the current columns in select
-    if(currColumns.indexOf("*") === -1) {
-        return false
-    }
+
     let currTables = astUtils.getTables(tree, [])
     let schema = schemaStore.getSchema()
     var i;
     for(i = 0; i < currTables.length; i++) {
-        if(schema[currTables[i]].indexOf(column) !== -1) {
+        //if col is in table's schema and table.* or * is present then return true
+        if(schema[currTables[i]].indexOf(column) !== -1 &&
+        ( (currColumns.indexOf(currTables[i] + ".*") !== -1) || (currColumns.indexOf("*") !== -1) ) ) {
             return true
         }
     }
