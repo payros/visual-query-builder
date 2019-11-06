@@ -82,6 +82,10 @@ astUtils.addSelectColumn = function(tree, column) {
     return newTree
 }
 
+//TO DO - Removes the column from the select clause.
+//Additionally it removes any table or tables that no longer have any columns on select by calling removeTable
+astUtils.removeSelectColumn = function(tree, column) {}
+
 //Recursively add table via natural join to the tree
 astUtils.addNaturalJoinTable = function(tree, table) {
     let newTree = JSON.parse(JSON.stringify(tree))
@@ -121,21 +125,8 @@ astUtils.addNaturalJoinTable = function(tree, table) {
     } 
 }
 
-
-//type of returns number and the sql parser only takes Number. same for string.
-//that's why i had to create this function
-//I could have just capitalized the first char but that's too late now :)
-function getTypeOfVal(val) {
-    switch(typeof val){
-        case 'string':
-            return 'String'
-        case 'number':
-            return 'Number'
-        default:
-            return typeof val
-    }
-}
-
+//Recursively removes table from tree
+astUtils.removeNaturalJoinTable = function(tree, table) {}
 
 //adds AND ${column} ${operator} ${val} to end of WHERE clause
 /**
@@ -144,39 +135,51 @@ astUtils.where(tree, "actual_time", ">=", 178) //adds actual_time>=178 to end of
 astUtils.where(tree, "dest_city", "=", "'denver'") note how the string needs to include '' inside
 astUtils.where(tree, "arrival_delay", "<", 31)
 **/
-astUtils.where = function(tree, column, operator, val) {
-    let node = tree.value.where
-    let valType = getTypeOfVal(val)
-    //node is null only if where is empty
-    if(node == null) {
-        tree.value.where = {
-            left:{type: "Identifier", value: column},
-            operator:operator,
-            right:{type: valType, value: val},
-            type:"ComparisonBooleanPrimary"          
-        }
-        return
-    }
-    var prev = null
-    //keep recursing until current node has no operator
-    //the one previous to it needs to be changed
-    while(node.operator != null) {
-        prev = node
-        node = node.right
-    }
-    
-    //deep copy of prev into prev.left
-    prev.left = JSON.parse(JSON.stringify(prev))
-    prev.right = {
+astUtils.addWhereColumn = function(tree, column, operator, val) {
+    let newTree = JSON.parse(JSON.stringify(tree))
+    let node = newTree.value.where
+    let valType = typeof val
+    valType = val.chartAt(0).toUpperCase() + val.substring(1) //Uppercase first letter
+    let nodeType = operator.toUpperCase() === "LIKE" ? "LikePredicate" : "ComparisonBooleanPrimary"
+    let newNode =  {
         left:{type: "Identifier", value: column},
-        operator:operator,
         right:{type: valType, value: val},
-        type:"ComparisonBooleanPrimary"
+        type:nodeType          
     }
-    //the high level operator needs to be AND
-    prev.operator = 'AND'
-    prev.type = 'AndExpression'
+    //We only need the if it's not 'like'
+    if(operator.toUpperCase() === "LIKE") newNode.operator = operator
+
+    //Node is null only if where is empty
+    if(node == null) {
+        node = newNode
+    //Append to the current where clause
+    } else {
+        let prev = null
+        //keep recursing until current node has no operator
+        //the one previous to it needs to be changed
+        while(node.operator != null) {
+            prev = node
+            node = node.right
+        }
+        
+        //deep copy of prev into prev.left
+        prev.left = JSON.parse(JSON.stringify(prev))
+        prev.right = newNode
+        //the high level operator needs to be AND
+        prev.operator = 'AND'
+        prev.type = 'AndExpression'       
+    }
+
+    return newTree
 }
 
+//TO DO - Remove where clause (or clauses) that match a certain column
+//Returns a new copy of the tree (it does not modify the original)
+astUtils.removeWhereColumn = function(tree, column) {
+    let newTree = JSON.parse(JSON.stringify(tree))
+    let node = newTree.value.where
+    //Loop through the tree and remove any matches to the column...
+    return newTree
+}
 export default astUtils
 
