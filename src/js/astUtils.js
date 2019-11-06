@@ -4,7 +4,6 @@ let astUtils = {}
 
 //Get all columns in a select query ast tree without the table. prefix
 astUtils.getColumns = function(tree, columnList){
-    console.log("tree =",tree)
     //This will get you a list of all literal columns
     columnList = tree.value.selectItems.value.reduce((arr, curr) => {
       if(curr.type === "Identifier"){
@@ -13,7 +12,6 @@ astUtils.getColumns = function(tree, columnList){
         //Use this instead to preserve the prefix to check for start
         arr.push(curr.value)
       } 
-      console.log("array = ",arr)
       return arr
     }, columnList)
     //console.log("cols = ",columnList)
@@ -123,9 +121,61 @@ astUtils.addNaturalJoinTable = function(tree, table) {
     } 
 }
 
-astUtils.where = function(column, operator, value) {
 
+//type of returns number and the sql parser only takes Number. same for string.
+//that's why i had to create this function
+//I could have just capitalized the first char but that's too late now :)
+function getTypeOfVal(val) {
+    switch(typeof val){
+        case 'string':
+            return 'String'
+        case 'number':
+            return 'Number'
+        default:
+            return typeof val
+    }
+}
+
+
+//adds AND ${column} ${operator} ${val} to end of WHERE clause
+/**
+examples:
+astUtils.where(tree, "actual_time", ">=", 178) //adds actual_time>=178 to end of where
+astUtils.where(tree, "dest_city", "=", "'denver'") note how the string needs to include '' inside
+astUtils.where(tree, "arrival_delay", "<", 31)
+**/
+astUtils.where = function(tree, column, operator, val) {
+    let node = tree.value.where
+    let valType = getTypeOfVal(val)
+    //node is null only if where is empty
+    if(node == null) {
+        tree.value.where = {
+            left:{type: "Identifier", value: column},
+            operator:operator,
+            right:{type: valType, value: val},
+            type:"ComparisonBooleanPrimary"          
+        }
+        return
+    }
+    var prev = null
+    //keep recursing until current node has no operator
+    //the one previous to it needs to be changed
+    while(node.operator != null) {
+        prev = node
+        node = node.right
+    }
     
+    //deep copy of prev into prev.left
+    prev.left = JSON.parse(JSON.stringify(prev))
+    prev.right = {
+        left:{type: "Identifier", value: column},
+        operator:operator,
+        right:{type: valType, value: val},
+        type:"ComparisonBooleanPrimary"
+    }
+    //the high level operator needs to be AND
+    prev.operator = 'AND'
+    prev.type = 'AndExpression'
 }
 
 export default astUtils
