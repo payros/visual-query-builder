@@ -146,8 +146,8 @@ astUtils.addWhereColumn = function(tree, column, operator, val) {
         right:{type: valType, value: val},
         type:nodeType          
     }
-    //We only need the if it's not 'like'
-    if(operator.toUpperCase() === "LIKE") newNode.operator = operator
+    //We only need the operator if it's not 'like'
+    if(operator.toUpperCase() !== "LIKE") newNode.operator = operator
 
     //Node is null only if where is empty
     if(node == null) {
