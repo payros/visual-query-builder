@@ -5,26 +5,36 @@ let astUtils = {}
 
 //Get all columns in a select query ast tree without the table. prefix
 astUtils.getColumns = function(tree, columnList){
+    const schema = schemaStore.getSchema()
+    const currTables = astUtils.getTables(tree, [])
     //This will get you a list of all literal columns
     columnList = tree.value.selectItems.value.reduce((arr, curr) => {
       if(curr.type === "Identifier"){
-        let vals = curr.value.split(".")
-        //arr.push(vals[vals.length-1])
-        //Use this instead to preserve the prefix to check for start
-        arr.push(curr.value)
+        const vals = curr.value.split(".")
+        //First check if column is *
+        if(curr.value === "*"){
+            //Add all the columns form currTables to the array
+            arr = currTables.reduce((arr, tbl) => arr.concat(schema[tbl].map(c => c.name)), arr)
+        //Now check if it matches "table.*"
+        } else if (curr.value.match(/[^\.]+\.\*$/) !== null){
+            //Add the colmns from that table to the array
+            if(schema[vals[0]]) arr = arr.concat(schema[vals[0]].map(c => c.name))
+        } else {
+            //Just add the single column
+            arr.push(vals[vals.length-1])
+        }
       } 
       return arr
     }, columnList)
-    //console.log("cols = ",columnList)
-    //TO Expand * into the literal column names
-    //Check for * and table.* and expand
+
     //Return a list of all expanded columns without the prefix
-    return columnList
+    return columnList.filter((el, i, self) => i === self.indexOf(el)) //Remove possible duplicates
 }
 
 //Recursively get all tables and alias in a select query ast tree
 astUtils.getTables = function(tree, tableList){
-    return recurse(tree.value, tableList)
+    console.log(tree)
+    return recurse(tree.value, tableList).filter((el, i, self) => i === self.indexOf(el)) //Remove possible duplicates
 
     function recurse(node, tableList){
         if(!node) return tableList
@@ -48,36 +58,31 @@ astUtils.getTables = function(tree, tableList){
     }      
 }
 
-// astUtils.isColInStar = function(tree, column) {
-//     // if column is from same table that is in FROM, and * or <table>.* is present then return true
-//     let currColumns = astUtils.getColumns(tree, [])
-
-//     let currTables = astUtils.getTables(tree, [])
-//     let schema = schemaStore.getSchema()
-//     var i;
-//     for(i = 0; i < currTables.length; i++) {
-//         //if col is in table's schema and table.* or * is present then return true
-//         if(schema[currTables[i]].indexOf(column) !== -1 &&
-//         ( (currColumns.indexOf(currTables[i] + ".*") !== -1) || (currColumns.indexOf("*") !== -1) ) ) {
-//             return true
-//         }
-//     }
-//     return false
-// }
-
 astUtils.addSelectColumn = function(tree, column) {
     let newTree = Object.assign({}, tree)
-    // if(!astUtils.isColInStar(tree, column)) {
-        newTree.value.selectItems.value.push({type:"Identifier", value:column, alias:null, hasAs:null})
-    // }
-    //TODO * Optimization
-    //Get all columns getColumns (without star)
-    //Get all tables
-    //Get the schema
-    //Check each table against all columns to see if it's complete
-    //Replace single table columns with table.*
-    //Potentially replace all table.* with a single *
-    //console.log("schema =",schemaStore.getSchema())
+    newTree.value.selectItems.value.push({type:"Identifier", value:column, alias:null, hasAs:null})
+
+    const currColumns = astUtils.getColumns(newTree, [])
+    const currTables = astUtils.getTables(newTree, [])
+    const schema = schemaStore.getSchema()
+    let newCols = []
+    //First replace  all columns with table.*
+    currTables.forEach(table => {
+        const filteredColumns = schema[table].filter(c => currColumns.indexOf(c.name) === -1)
+        
+        if(filteredColumns.length === 0) {
+            //First filter out all the columns from this table
+            newCols = newCols.filter(col => schema[table].map(c => c.name).indexOf(col) === -1)
+            //TO DO Check if the table has an alias when optimizing with table.* and use the alias instead
+            newCols.push(table + ".*")
+        }
+    })
+    //Now replace all table.* with a single *
+    const starCols = newCols.filter(c => c.indexOf(".*") > -1)
+    if(starCols.length === newCols.length) newCols = ["*"]
+
+    //Finally, add all columns back on the tree
+    newTree.value.selectItems.value = newCols.map(c => { return {type:"Identifier", value:c, alias:null, hasAs:null} })
 
     return newTree
 }

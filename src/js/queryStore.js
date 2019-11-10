@@ -9,8 +9,7 @@ import parser from 'js-sql-parser'
 class QueryStore extends EventEmitter {
   constructor() {
     super()
-    this.query = parser.parse("SELECT * FROM flights WHERE dest_city LIKE 'S%' AND origin_state LIKE 'F%'")
-    // console.log(this.query)
+    this.query = null
 
     schemaStore.on("filtering-toggled", () => {
       const isFilteringChecked = schemaStore.getFiltering()
@@ -29,8 +28,8 @@ class QueryStore extends EventEmitter {
     if(!this.query){
       this.query = parser.parse("SELECT " + column + " FROM " + table)
     } else {
-      const currTables = ast.getTables(this.query, []).filter((el, i, self) => i === self.indexOf(el)) //Remove possible duplicates
-      const currColumns = ast.getColumns(this.query, []).filter((el, i, self) => i === self.indexOf(el)) //Remove possible duplicates
+      const currTables = ast.getTables(this.query, [])
+      const currColumns = ast.getColumns(this.query, [])
 
       //Check if the column is already listed on the 'select' list 
       if(currColumns.indexOf(column) === -1) {
