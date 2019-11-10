@@ -63,9 +63,10 @@ class FlexHead extends React.Component {
 		if(this.props.rows && this.props.rows.length) { // Content defined via props
 			rows = this.props.rows.map(r => <FlexRow cells={r} headCells={true} tableWidth={this.state.width}/>)
 		} else if(this.props.children && this.props.children.length) { // Multiple children
-			rows = this.props.children.map(child => React.cloneElement(React.Children.only(child), { tableWidth:this.state.width }));
-		} else if(this.props.children){ // One Child
-			rows = React.cloneElement(React.Children.only(this.props.children), { tableWidth:this.state.width });
+			rows = this.props.children.map(child => child ? React.cloneElement(React.Children.only(child), { headCells:true, tableWidth:this.state.width }) : child);
+		} else if(this.props.children && this.props.children.length !== 0){ // One Child
+
+			rows = React.cloneElement(React.Children.only(this.props.children), { headCells:true, tableWidth:this.state.width });
 		}
 		return 	<thead ref="thead" className="flex-head">{rows}</thead>
 	}
@@ -95,7 +96,7 @@ class FlexBody extends React.Component {
 			rows = this.props.rows.map(r => <FlexRow cells={r} tableWidth={this.state.width} headCells={false}/>)
 		} else if(this.props.children && this.props.children.length) { // Multiple children
 			rows = this.props.children.map(child => React.cloneElement(React.Children.only(child), { tableWidth:this.state.width }));
-		} else if(this.props.children){ // One Child
+		} else if(this.props.children && this.props.children.length !== 0){ // One Child
 			rows = React.cloneElement(React.Children.only(this.props.children), { tableWidth:this.state.width });
 		}
 		return 	<tbody ref="tbody" className="flex-body" style={{height:this.state.height}}>{rows}</tbody>
@@ -104,16 +105,19 @@ class FlexBody extends React.Component {
 
 class FlexRow extends React.Component {
 	render(){
-		let cells;
-		let fontSize = this.props.cells.length > 10 ? "sm-font" : 
-					   this.props.cells.length > 2 ? "md-font" : "lg-font"
+		let cells, fontSize;
 		if(this.props.cells && this.props.cells.length){  // Content defined via props
+			fontSize = this.props.cells.length > 10 ? "sm-font" : 
+					   this.props.cells.length > 2 ? "md-font" : "lg-font"
 			cells = this.props.cells.map(c => <FlexCell width={this.props.tableWidth/this.props.cells.length} headCell={this.props.headCells}>{c}</FlexCell>)
 		} else if(this.props.children && this.props.children.length) { // Multiple children
+			fontSize = this.props.children.length > 10 ? "sm-font" : 
+					   this.props.children.length > 2 ? "md-font" : "lg-font"
 			const cellWidth = this.props.tableWidth/this.props.children.length;
-			cells = this.props.children.map(child => React.cloneElement(React.Children.only(child), { width:cellWidth }));
-		} else if(this.props.children){ // One Child
-			cells = React.cloneElement(React.Children.only(this.props.children), { width:this.props.tableWidth });
+			cells = this.props.children.map(child => React.cloneElement(React.Children.only(child), { headCell:this.props.headCells, width:cellWidth }));
+		} else if(this.props.children && this.props.children.length !== 0){ // One Child
+			fontSize = "lg-font"
+			cells = React.cloneElement(React.Children.only(this.props.children), {  headCell:this.props.headCells, width:this.props.tableWidth });
 		}
 		return 	<tr className={"flex-row " + fontSize}>{cells}</tr>
 	}
@@ -121,8 +125,8 @@ class FlexRow extends React.Component {
 
 class FlexCell extends React.Component {
 	render(){
-		return 	this.props.headCell ? <th className="flex-cell" style={{ width:this.props.width }}>{this.props.children}</th> : 
-									  <td className="flex-cell" style={{ width:this.props.width }}>{this.props.children}</td>
+		return 	this.props.headCell ? <th className={"flex-cell " + (this.props.className ? this.props.className : "")} style={{ width:this.props.width }}>{this.props.children}</th> : 
+									  <td className={"flex-cell " + (this.props.className ? this.props.className : "")} style={{ width:this.props.width }}>{this.props.children}</td>
 	}
 }
 

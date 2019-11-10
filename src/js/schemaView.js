@@ -1,5 +1,6 @@
 import React from 'react'
 import axios from 'axios'
+import { FormGroup, FormControlLabel, Switch } from '@material-ui/core';
 import schemaStore from './schemaStore'
 import dispatcher from './dispatcher'
 import Utils from './utils'
@@ -7,7 +8,7 @@ import Utils from './utils'
 class SchemaView extends React.Component {
 	constructor() {
     	super()
-    	this.state = {loading:true, schema:{}}
+    	this.state = { loading:true, schema:{}, filteringToggle:schemaStore.getFiltering() }
   	}
 
   	componentWillMount(){
@@ -20,10 +21,23 @@ class SchemaView extends React.Component {
 		schemaStore.on("schema-error", () => {
 			this.setState({error:true, loading:false, errorLog:schemaStore.getErrorLog()})
 		})
+		schemaStore.on("filtering-toggled", () => {
+			this.setState({filteringToggle:schemaStore.getFiltering()})
+		})
 
 		//Get schema for the first time
 		dispatcher.dispatch({ type:'FETCH_SCHEMA' })
   	}
+
+  	handleChange(e){
+        const key = e.target.name
+        this.setState({ [key]: e.target.checked }, () => {
+            dispatcher.dispatch({ 
+            	type:'TOGGLE_FILTERING',
+            	checked:this.state[key]
+            })  
+        })
+    }
 
     render(){
     	let content;
@@ -34,6 +48,15 @@ class SchemaView extends React.Component {
     		content = <ul className="table-list">{ Object.keys(s).map(k => <li><ColumnList title={k} columns={s[k]}/></li>)}</ul>
     	}
         return  <sidebar id="schema_browser">
+        			<h3>Operations</h3>
+        			<FormGroup row className="toggles-list">
+				      <FormControlLabel
+				        control={
+				          <Switch checked={this.state.filteringToggle} onChange={(ev) => this.handleChange(ev)} className="yellow" inputProps={{ 'aria-label': 'checkbox', 'name':'filteringToggle' }}/>
+				        }
+				        label="Filtering"
+				     />
+    				</FormGroup>
         			<h3>Schema</h3>
         			{content}
                 </sidebar>
@@ -44,7 +67,7 @@ class ColumnList extends React.Component {
 	render(){
 		return <React.Fragment>
 					<p className="table-title">{this.props.title}</p>
-					<ul className="column-list">{ this.props.columns.map(c => <ColumnItem table={this.props.title} column={c}/>)}</ul>
+					<ul className="column-list">{ this.props.columns.map(c => <ColumnItem table={this.props.title} column={c.name}/>)}</ul>
 			   </React.Fragment>
 	}
 }

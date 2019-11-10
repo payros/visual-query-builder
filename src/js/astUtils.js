@@ -1,4 +1,5 @@
 import schemaStore from './schemaStore'
+import utils from './utils'
 
 let astUtils = {}
 
@@ -23,7 +24,6 @@ astUtils.getColumns = function(tree, columnList){
 
 //Recursively get all tables and alias in a select query ast tree
 astUtils.getTables = function(tree, tableList){
-    console.log("this is the tree", tree)
     return recurse(tree.value, tableList)
 
     function recurse(node, tableList){
@@ -48,30 +48,30 @@ astUtils.getTables = function(tree, tableList){
     }      
 }
 
-astUtils.isColInStar = function(tree, column) {
-    // if column is from same table that is in FROM, and * or <table>.* is present then return true
-    let currColumns = astUtils.getColumns(tree, [])
+// astUtils.isColInStar = function(tree, column) {
+//     // if column is from same table that is in FROM, and * or <table>.* is present then return true
+//     let currColumns = astUtils.getColumns(tree, [])
 
-    let currTables = astUtils.getTables(tree, [])
-    let schema = schemaStore.getSchema()
-    var i;
-    for(i = 0; i < currTables.length; i++) {
-        //if col is in table's schema and table.* or * is present then return true
-        if(schema[currTables[i]].indexOf(column) !== -1 &&
-        ( (currColumns.indexOf(currTables[i] + ".*") !== -1) || (currColumns.indexOf("*") !== -1) ) ) {
-            return true
-        }
-    }
-    return false
-}
+//     let currTables = astUtils.getTables(tree, [])
+//     let schema = schemaStore.getSchema()
+//     var i;
+//     for(i = 0; i < currTables.length; i++) {
+//         //if col is in table's schema and table.* or * is present then return true
+//         if(schema[currTables[i]].indexOf(column) !== -1 &&
+//         ( (currColumns.indexOf(currTables[i] + ".*") !== -1) || (currColumns.indexOf("*") !== -1) ) ) {
+//             return true
+//         }
+//     }
+//     return false
+// }
 
 astUtils.addSelectColumn = function(tree, column) {
     let newTree = Object.assign({}, tree)
-    if(!astUtils.isColInStar(tree, column)) {
+    // if(!astUtils.isColInStar(tree, column)) {
         newTree.value.selectItems.value.push({type:"Identifier", value:column, alias:null, hasAs:null})
-    }
+    // }
     //TODO * Optimization
-    //Get all columns
+    //Get all columns getColumns (without star)
     //Get all tables
     //Get the schema
     //Check each table against all columns to see if it's complete
@@ -139,7 +139,7 @@ astUtils.addWhereColumn = function(tree, column, operator, val) {
     let newTree = JSON.parse(JSON.stringify(tree))
     let node = newTree.value.where
     let valType = typeof val
-    valType = val.chartAt(0).toUpperCase() + val.substring(1) //Uppercase first letter
+    valType = valType.charAt(0).toUpperCase() + valType.substring(1) //Uppercase first letter
     let nodeType = operator.toUpperCase() === "LIKE" ? "LikePredicate" : "ComparisonBooleanPrimary"
     let newNode =  {
         left:{type: "Identifier", value: column},
@@ -151,16 +151,16 @@ astUtils.addWhereColumn = function(tree, column, operator, val) {
 
     //Node is null only if where is empty
     if(node == null) {
-        node = newNode
+        newTree.value.where = newNode
     //Append to the current where clause
     } else {
         let prev = null
-        //keep recursing until current node has no operator
+        //keep recursing until the left leaf of the current node is an identifier (we reached the bottom of the tree)
         //the one previous to it needs to be changed
-        while(node.operator != null) {
+        do {
             prev = node
             node = node.right
-        }
+        } while(node.left && node.left.type == "Identifier")
         
         //deep copy of prev into prev.left
         prev.left = JSON.parse(JSON.stringify(prev))
@@ -170,16 +170,48 @@ astUtils.addWhereColumn = function(tree, column, operator, val) {
         prev.type = 'AndExpression'       
     }
 
+    
     return newTree
+}
+
+astUtils.getWhereColumn = function(tree, column) {
+    return recurse(tree.value.where)
+
+    function recurse(node){
+        if(!node) return null
+        const nodeType = node.type
+        switch(nodeType){
+          case 'AndExpression':
+          case 'OrExpression':
+            return recurse(node.left) || recurse(node.right)
+          default:
+            return node.left && node.left.type === "Identifier" && node.left.value == column ? node : null
+        }
+    }    
 }
 
 //TO DO - Remove where clause (or clauses) that match a certain column
 //Returns a new copy of the tree (it does not modify the original)
-astUtils.removeWhereColumn = function(tree, column) {
+astUtils.removeWhereColumn = function(tree, column, operator) {
+    const targetType = operator.toUpperCase() === "LIKE" ? "LikePredicate" : "ComparisonBooleanPrimary"
     let newTree = JSON.parse(JSON.stringify(tree))
-    let node = newTree.value.where
-    //Loop through the tree and remove any matches to the column...
+    newTree.value.where = recurse(newTree.value.where)
     return newTree
+
+    function recurse(node){
+        if(!node) return node
+        const nodeType = node.type
+        switch(nodeType){
+          case 'AndExpression':
+          case 'OrExpression':
+            if(node.left.type === targetType && node.left.left.value === column)
+                node = node.right
+            if(node.right.type === targetType && node.right.left.value === column)
+                node = node.left
+        }
+        return node
+    }  
 }
+
 export default astUtils
 

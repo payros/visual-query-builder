@@ -1,3 +1,5 @@
+$white-caret: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAYElEQVQ4T82SQQ7AIAgEd3+qL9Of0tSkRCMaCxe5z5BdIILDII8LBCKSABRnlNwiOCWZZNUOfkoa/C4fSjyUKDwJDuIMsCnYSCZ4KTAkJrwVdBJ8hVmnvuATnR+oWDjCA8ybJm5lcd5iAAAAAElFTkSuQmCC);
+
 /********** COLOR PALETTE **********/
 $primary-dark: #248EA6;
 $primary-light: #25C7D9;
@@ -15,6 +17,30 @@ textarea, input {
 		outline:none;
 	}
 }
+
+/*  select {
+	  	width: 54px;
+	  	border-radius: 4px;
+	    border: 1px solid #fff;
+	    background-color: transparent;
+	    color:#fff;
+	    font-weight: bold;
+	    margin: 0;
+	    height: auto;
+	    max-height:20px;
+	    padding: 0 8px;
+	    margin-right: -0.5rem;
+	    outline: none;
+	    background-position: 94% 50%;
+	    background-size: 8px 10px;
+                background-repeat: no-repeat;
+                background-image: $white-caret;
+                -webkit-appearance: none;
+	    -moz-appearance: none;
+	    &::-ms-expand {
+	    	display:none;
+	    }   
+  }*/
 
 
 
@@ -47,6 +73,27 @@ sidebar {
 		color:#999;
 		margin:0;
 		padding:10px 0;
+	}
+
+	.toggles-list {
+		padding-left:20px;
+
+		.MuiFormControlLabel-label {
+			color:#666;
+		}
+
+		.yellow .MuiSwitch-colorSecondary.Mui-checked {
+			color:lighten($accent, 15%);
+		}
+
+		.yellow .MuiSwitch-colorSecondary.Mui-checked + .MuiSwitch-track {
+			background-color:#777;
+			opacity:1;
+		}
+
+		.yellow .MuiSwitch-colorSecondary.Mui-checked:hover {
+			background-color:rgba($accent, 0.08);
+		}
 	}
 
 	.table-list {
@@ -96,11 +143,39 @@ sidebar {
 		overflow: hidden;
 	}
 
+	thead .flex-row {
+		border:none;
+	}
+
 	th {
 		background-color:$primary-dark;
 		color:#fff;
 		font-weight: 400;
 		padding:0.75rem 0.5rem;
+
+		&.filter {
+			background-color:lighten($accent, 20%);
+			display:flex;
+			flex-wrap:wrap;
+			align-items: flex-end;
+			padding:0.5rem 0.5rem;
+
+			> input {
+				background: transparent;
+			    border: 0;
+			    border-bottom: 1px solid #777;
+			    max-height: 35px;
+			    width:auto;
+			    margin-top:5px;
+			}
+
+			.MuiInputBase-root {
+				color: #777;
+				border-color:#777;
+				margin-right:5px;
+				font-size:0.7rem;
+			}
+		}
 	}
 
 	#error-msg {

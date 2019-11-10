@@ -6,6 +6,7 @@ class SchemaStore extends EventEmitter {
   constructor() {
     super()
     this.schema = {}
+    this.filtering = false
     this.errorLog = ""
   }
 
@@ -27,6 +28,15 @@ class SchemaStore extends EventEmitter {
     return this.errorLog
   }
 
+  setFiltering(checked){
+    this.filtering = checked
+    this.emit("filtering-toggled")
+  }
+
+  getFiltering(){
+    return this.filtering
+  }
+
   handleActions(action) {
     switch(action.type) {
         case "FETCH_SCHEMA":
@@ -39,6 +49,8 @@ class SchemaStore extends EventEmitter {
               this.setError(err.response.data)
             })
             break
+        case "TOGGLE_FILTERING":
+          this.setFiltering(action.checked)
     }
   }
 

@@ -9,7 +9,17 @@ import parser from 'js-sql-parser'
 class QueryStore extends EventEmitter {
   constructor() {
     super()
-    this.query = null
+    this.query = parser.parse("SELECT * FROM flights WHERE dest_city LIKE 'S%' AND origin_state LIKE 'F%'")
+    // console.log(this.query)
+
+    schemaStore.on("filtering-toggled", () => {
+      const isFilteringChecked = schemaStore.getFiltering()
+      //If filtering was unchecked, remove the where clause
+      if(!isFilteringChecked) {
+        this.query.value.where = null;
+        this.emit("query-updated");
+      }
+    })
   }
 
   addColumn(col) {
@@ -36,6 +46,32 @@ class QueryStore extends EventEmitter {
     this.emit("query-updated");
   }
 
+  filterColumn(column, operator, value) {
+    //TO DO remove the column
+    this.query = ast.removeWhereColumn(this.query, column, operator)
+    
+    if(value.length) {
+      value = operator === "like" ? "'" + value + "%'" : parseInt(value)
+      console.log(column, operator, value)
+      this.query = ast.addWhereColumn(this.query, column, operator, value)
+    }
+    console.log(this.query)
+    setTimeout(() => { this.emit("query-updated") })
+  }
+
+  getWhereForColumn(column) {
+    const whereNode = ast.getWhereColumn(this.query, column)
+    let operator = ""
+    let value = ""
+
+    if(whereNode !== null) {
+      operator = whereNode.type == "LikePredicate" ? "like" : whereNode.operator
+      value = whereNode.type == "LikePredicate" ? whereNode.right.value.match(/^'%?([^%]*)%?'$/)[1] : whereNode.right.value
+    }
+    
+    return { operator, value }
+  }
+
   parseQuery(queryStr){ //Assumes the query is valid or empty
     this.query = queryStr.length ? parser.parse(queryStr) : null
   }
@@ -56,6 +92,11 @@ class QueryStore extends EventEmitter {
 
         case "UPDATE_QUERY":
           this.parseQuery(action.query)
+          break
+
+        case "FILTER_COLUMN":
+          console.log(action.column, action.operator, action.value)
+          this.filterColumn(action.column, action.operator, action.value)
           break
     }
   }
