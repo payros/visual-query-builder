@@ -7,6 +7,8 @@ class SchemaStore extends EventEmitter {
     super()
     this.schema = {}
     this.filtering = false
+    this.grouping = false
+    this.ordering = false
     this.errorLog = ""
   }
 
@@ -37,20 +39,45 @@ class SchemaStore extends EventEmitter {
     return this.filtering
   }
 
+  setGrouping(checked){
+    this.grouping = checked
+    this.emit("grouping-toggled")
+  }
+
+  getGrouping(){
+    return this.grouping
+  }
+
+  setOrdering(checked){
+    this.ordering = checked
+    this.emit("ordering-toggled")
+  }
+
+  getOrdering(){
+    return this.ordering
+  }
+
   handleActions(action) {
     switch(action.type) {
-        case "FETCH_SCHEMA":
-            this.emit("schema-loading")
-            axios.get('/get-schema').then(res => {
-              if(res.data){
-                this.setSchema(res.data)
-              }
-            }).catch(err => {
-              this.setError(err.response.data)
-            })
-            break
-        case "TOGGLE_FILTERING":
-          this.setFiltering(action.checked)
+      case "FETCH_SCHEMA":
+        this.emit("schema-loading")
+        axios.get('/get-schema').then(res => {
+          if(res.data){
+            this.setSchema(res.data)
+          }
+        }).catch(err => {
+          this.setError(err.response.data)
+        })
+        break
+      case "TOGGLE_FILTERING":
+        this.setFiltering(action.checked)
+        break
+      case "TOGGLE_GROUPING":
+        this.setGrouping(action.checked)
+        break
+      case "TOGGLE_ORDERING":
+        this.setOrdering(action.checked)
+        break
     }
   }
 

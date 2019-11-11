@@ -14,7 +14,7 @@ class QueryStore extends EventEmitter {
     schemaStore.on("filtering-toggled", () => {
       const isFilteringChecked = schemaStore.getFiltering()
       //If filtering was unchecked, remove the where clause
-      if(!isFilteringChecked) {
+      if(!isFilteringChecked && this.query !== null) {
         this.query.value.where = null;
         this.emit("query-updated");
       }
@@ -59,6 +59,14 @@ class QueryStore extends EventEmitter {
       this.query = ast.addWhereColumn(this.query, column, operator, value)
     }
     setTimeout(() => { this.emit("query-updated") })  // Avoids dispatcher invariant issues
+  }
+
+  groupColumn(column, func){
+    //TO DO add grouping to the ast tree
+  }
+
+  orderColumn(column, order, sort){
+    //TO DO add ordering to the ast tree
   }
 
   getWhereForColumn(column) {
@@ -106,8 +114,15 @@ class QueryStore extends EventEmitter {
           break
 
         case "FILTER_COLUMN":
-          console.log(action.column, action.operator, action.value)
           this.filterColumn(action.column, action.operator, action.value)
+          break
+
+        case "GROUP_COLUMN":
+          this.groupColumn(action.column, action.func)
+          break
+
+        case "ORDER_COLUMN":
+          this.orderColumn(action.column, action.order, action.sort)
           break
     }
   }

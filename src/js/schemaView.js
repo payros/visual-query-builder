@@ -8,7 +8,7 @@ import Utils from './utils'
 class SchemaView extends React.Component {
 	constructor() {
     	super()
-    	this.state = { loading:true, schema:{}, filteringToggle:schemaStore.getFiltering() }
+    	this.state = { loading:true, schema:{}, filteringToggle:schemaStore.getFiltering(), groupingToggle:schemaStore.getGrouping(), orderingToggle:schemaStore.getOrdering() }
   	}
 
   	componentWillMount(){
@@ -24,6 +24,12 @@ class SchemaView extends React.Component {
 		schemaStore.on("filtering-toggled", () => {
 			this.setState({filteringToggle:schemaStore.getFiltering()})
 		})
+		schemaStore.on("grouping-toggled", () => {
+			this.setState({groupingToggle:schemaStore.getGrouping()})
+		})
+		schemaStore.on("ordering-toggled", () => {
+			this.setState({orderingToggle:schemaStore.getOrdering()})
+		})
 
 		//Get schema for the first time
 		dispatcher.dispatch({ type:'FETCH_SCHEMA' })
@@ -32,8 +38,20 @@ class SchemaView extends React.Component {
   	handleChange(e){
         const key = e.target.name
         this.setState({ [key]: e.target.checked }, () => {
-            dispatcher.dispatch({ 
-            	type:'TOGGLE_FILTERING',
+        	let toggleType
+        	switch(key){
+        		case "filteringToggle":
+        			toggleType = "TOGGLE_FILTERING"
+        			break;
+        		case "groupingToggle":
+        			toggleType = "TOGGLE_GROUPING"
+        			break;
+        		case "orderingToggle":
+        			toggleType = "TOGGLE_ORDERING"
+        			break;
+        	}
+        	dispatcher.dispatch({ 
+            	type:toggleType,
             	checked:this.state[key]
             })  
         })
@@ -47,18 +65,15 @@ class SchemaView extends React.Component {
     		const s = this.state.schema
     		content = <ul className="table-list">{ Object.keys(s).map(k => <li><ColumnList title={k} columns={s[k]}/></li>)}</ul>
     	}
-        return  <sidebar id="schema_browser">
-        			<h3>Operations</h3>
-        			<FormGroup row className="toggles-list">
-				      <FormControlLabel
-				        control={
-				          <Switch checked={this.state.filteringToggle} onChange={(ev) => this.handleChange(ev)} className="yellow" inputProps={{ 'aria-label': 'checkbox', 'name':'filteringToggle' }}/>
-				        }
-				        label="Filtering"
-				     />
-    				</FormGroup>
+        return  <sidebar id="schema-browser">
         			<h3>Schema</h3>
         			{content}
+        			<h3>Operations</h3>
+        			<FormGroup row className="toggles-list">
+				    	<FormControlLabel label="Filtering" control={<Switch checked={this.state.filteringToggle} onChange={(ev) => this.handleChange(ev)} className="yellow" inputProps={{ 'aria-label': 'checkbox', 'name':'filteringToggle' }}/> }/>
+				    	<FormControlLabel label="Grouping" control={<Switch checked={this.state.groupingToggle} onChange={(ev) => this.handleChange(ev)} className="blue" inputProps={{ 'aria-label': 'checkbox', 'name':'groupingToggle' }}/> }/>
+				    	<FormControlLabel label="Ordering" control={<Switch checked={this.state.orderingToggle} onChange={(ev) => this.handleChange(ev)} className="orange" inputProps={{ 'aria-label': 'checkbox', 'name':'orderingToggle' }}/> }/>
+    				</FormGroup>
                 </sidebar>
     }
 }
