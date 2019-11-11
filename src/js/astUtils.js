@@ -60,7 +60,7 @@ astUtils.getTables = function(tree, tableList){
 astUtils.addSelectColumn = function(tree, column, table) {
     let newTree = Object.assign({}, tree)
     if(column === "*") column = table + "." + column
-        
+
     //Push the new column into the tree
     newTree.value.selectItems.value.push({type:"Identifier", value:column, alias:null, hasAs:null})
 
@@ -203,7 +203,7 @@ astUtils.getWhereColumn = function(tree, column) {
     }    
 }
 
-//TO DO - Remove where clause (or clauses) that match a certain column
+//Remove where clause (or clauses) that match a certain column
 //Returns a new copy of the tree (it does not modify the original)
 astUtils.removeWhereColumn = function(tree, column, operator) {
     const targetType = operator.toUpperCase() === "LIKE" ? "LikePredicate" : "ComparisonBooleanPrimary"
@@ -215,12 +215,19 @@ astUtils.removeWhereColumn = function(tree, column, operator) {
         if(!node) return node
         const nodeType = node.type
         switch(nodeType){
-          case 'AndExpression':
-          case 'OrExpression':
-            if(node.left.type === targetType && node.left.left.value === column)
-                node = node.right
-            if(node.right.type === targetType && node.right.left.value === column)
-                node = node.left
+            case 'AndExpression':
+            case 'OrExpression':
+                if(node.left.type === targetType && node.left.left.value === column) {
+                    node = node.right
+                } else if(node.right.type === targetType && node.right.left.value === column){
+                    node = node.left
+                } else {
+                    node.left = recurse(node.left)
+                    node.right = recurse(node.right)
+                }
+                break
+            default:
+                node = node.type === targetType && node.left.value === column ? null : node
         }
         return node
     }  
