@@ -87,7 +87,7 @@ astUtils.addSelectColumn = function(tree, column, table) {
     //Now replace all table.* with a single *
     const starCols = newColumns.filter(c => c.indexOf(".*") > -1)
     if(starCols.length === newColumns.length) newColumns = ["*"]
-    newColumns.reverse()
+    // newColumns.reverse()
 
     //Finally, add all columns back on the new ast tree
     newTree.value.selectItems.value = newColumns.map(c => { return {type:"Identifier", value:c, alias:null, hasAs:null} })

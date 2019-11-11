@@ -167,7 +167,7 @@ class FilterCell extends React.Component {
 						<option value=">" >greater than</option>
 						<option value="<>" >not equal</option>
         			</NativeSelect>}
-					<input name="value" type={this.props.column.type === "integer" ? 'number' : 'text'} placeholder={this.props.column.name + " filter"} value={this.state.value} onChange={(ev) => this.handleChange(ev)}/>
+					<input name="value" type={this.props.column.type === "integer" ? 'number' : 'text'} placeholder={"filter " + this.props.column.name} value={this.state.value} onChange={(ev) => this.handleChange(ev)}/>
 				</FlexCell>
 	}
 }

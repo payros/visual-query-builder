@@ -142,8 +142,13 @@ sidebar {
 		overflow: hidden;
 	}
 
-	thead .flex-row {
-		border:none;
+	thead {
+		box-shadow: 0 1px 6px rgba(0,0,0,0.2);
+    	z-index: 1;
+		
+		.flex-row {
+			border:none;
+		}
 	}
 
 	th {
