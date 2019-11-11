@@ -46,15 +46,12 @@ class QueryStore extends EventEmitter {
   }
 
   filterColumn(column, operator, value) {
-    //TO DO remove the column
     this.query = ast.removeWhereColumn(this.query, column, operator)
-    
+
     if(value.length) {
       value = operator === "like" ? "'" + value + "%'" : parseInt(value)
-      console.log(column, operator, value)
       this.query = ast.addWhereColumn(this.query, column, operator, value)
     }
-    console.log(this.query)
     setTimeout(() => { this.emit("query-updated") })
   }
 
