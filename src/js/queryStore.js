@@ -31,8 +31,8 @@ class QueryStore extends EventEmitter {
       const currTables = ast.getTables(this.query, [])
       const currColumns = ast.getColumns(this.query, [])
 
-      //Check if the column is already listed on the 'select' list 
-      if(currColumns.indexOf(column) === -1) {
+      //Check if the column is already listed on the 'select' list (or is star)
+      if(column === "*" || currColumns.indexOf(column) === -1) {
         this.query = ast.addSelectColumn(this.query, column, table)
       }
 

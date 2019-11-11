@@ -67,7 +67,10 @@ class ColumnList extends React.Component {
 	render(){
 		return <React.Fragment>
 					<p className="table-title">{this.props.title}</p>
-					<ul className="column-list">{ this.props.columns.map(c => <ColumnItem table={this.props.title} column={c.name}/>)}</ul>
+					<ul className="column-list">
+						{ this.props.columns.map(c => <ColumnItem table={this.props.title} column={c.name}/>)}
+						<ColumnItem table={this.props.title} column="*"/>
+					</ul>
 			   </React.Fragment>
 	}
 }

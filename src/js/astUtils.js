@@ -59,6 +59,8 @@ astUtils.getTables = function(tree, tableList){
 
 astUtils.addSelectColumn = function(tree, column, table) {
     let newTree = Object.assign({}, tree)
+    if(column === "*") column = table + "." + column
+        
     //Push the new column into the tree
     newTree.value.selectItems.value.push({type:"Identifier", value:column, alias:null, hasAs:null})
 
