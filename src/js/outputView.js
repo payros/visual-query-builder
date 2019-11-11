@@ -39,7 +39,9 @@ class ResultsTable extends React.Component {
 			this.setState({ headers:queryStore.getColumns() })
 		})
 		schemaStore.on("filtering-toggled", () => {
-			this.setState({filteringToggle:schemaStore.getFiltering()})
+			this.setState({filteringToggle:schemaStore.getFiltering()}, () => {
+				this.refs.table.handleResize()
+			})
 		})
 	}
 
@@ -68,21 +70,27 @@ class ResultsTable extends React.Component {
     	dispatcher.dispatch({ type:'COLUMN_DROP', column:column })
     }
 
+    handleRemoveColumn(column){
+    	console.log("Remove column '" + column + "'")
+    	dispatcher.dispatch({ type:'COLUMN_REMOVE', column:column })
+    }
+
 	render(){
 		const rows = (this.state.results.length ? this.state.results : []).map(r => this.state.headers.map(h => r[h]))
 		const schema = schemaStore.getSchema()
 		const allColumns = Object.keys(schema).reduce((arr, table) => arr.concat(schema[table]), [])
+		const headerCells = this.state.headers.map(col => <FlexCell className="column-remove-btn" onClick={() => this.handleRemoveColumn(col)} >{col}</FlexCell>)
 		const filterCells = this.state.headers.map(v => <FilterCell column={allColumns[allColumns.map(c => c.name).indexOf(v)]}/>)
 
 		return  <Paper>
 					{this.state.dragging && <div className="drop-curtain" onDragOver={this.handleDragOver} onDrop={(ev) => this.handleDrop(ev)}><p>Drop to Add Column to Query</p></div>}
 					{this.state.loading && <Utils.AjaxLoader/>}
 					{!this.state.loading && this.state.headers.length > 0 && this.state.results.length === 0 && <p className="empty-msg">No Results</p>}
-					{!this.state.loading && this.state.headers.length === 0 && this.state.results.length === 0 && <p className="empty-msg">Drop a Column<br></br>or<br></br>Type a Query</p>}
+					{!this.state.loading && this.state.headers.length === 0 && this.state.results.length === 0 && <p className="empty-msg">Drop a Column<br></br><span style={{fontWeight:100, fontSize:'80%'}}>or</span><br></br>Type a Query</p>}
 					{this.state.error && <p id="error-msg">{this.state.errorLog}</p>}
-					{!this.state.error &&  <FlexTable>
+					{!this.state.error &&  <FlexTable ref="table">
 												<FlexHead>
-										        	<FlexRow cells={this.state.headers}/>
+										        	<FlexRow>{headerCells}</FlexRow>
 										        	{this.state.filteringToggle && <FlexRow>{filterCells}</FlexRow>}
 												</FlexHead>
 										        <FlexBody rows={rows}/>

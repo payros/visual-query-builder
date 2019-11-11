@@ -1,3 +1,4 @@
+import '../../node_modules/font-awesome/css/font-awesome.min.css'
 import '../scss/styles.scss'
 import 'typeface-roboto'
 import React from 'react'

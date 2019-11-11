@@ -125,8 +125,8 @@ class FlexRow extends React.Component {
 
 class FlexCell extends React.Component {
 	render(){
-		return 	this.props.headCell ? <th className={"flex-cell " + (this.props.className ? this.props.className : "")} style={{ width:this.props.width }}>{this.props.children}</th> : 
-									  <td className={"flex-cell " + (this.props.className ? this.props.className : "")} style={{ width:this.props.width }}>{this.props.children}</td>
+		return 	this.props.headCell ? <th className={"flex-cell " + (this.props.className ? this.props.className : "")} style={{ width:this.props.width }} onClick={this.props.onClick}>{this.props.children}</th> : 
+									  <td className={"flex-cell " + (this.props.className ? this.props.className : "")} style={{ width:this.props.width }} onClick={this.props.onClick}>{this.props.children}</td>
 	}
 }
 

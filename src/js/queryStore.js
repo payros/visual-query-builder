@@ -45,6 +45,12 @@ class QueryStore extends EventEmitter {
     this.emit("query-updated");
   }
 
+  removeColumn(col) {
+    //TO DO Remove the column
+    //ast.removeColumn(col)
+    //this.emit("query-updated");
+  }
+
   filterColumn(column, operator, value) {
     this.query = ast.removeWhereColumn(this.query, column, operator)
 
@@ -89,6 +95,10 @@ class QueryStore extends EventEmitter {
     switch(action.type) {
         case "COLUMN_DROP":
           this.addColumn(action.column)
+          break
+
+        case "COLUMN_REMOVE":
+          this.removeColumn(action.column)
           break
 
         case "UPDATE_QUERY":
