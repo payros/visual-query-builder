@@ -58,7 +58,7 @@ class QueryStore extends EventEmitter {
       value = operator === "like" ? "'" + value + "%'" : parseInt(value)
       this.query = ast.addWhereColumn(this.query, column, operator, value)
     }
-    setTimeout(() => { this.emit("query-updated") })
+    setTimeout(() => { this.emit("query-updated") })  // Avoids dispatcher invariant issues
   }
 
   getWhereForColumn(column) {
@@ -80,7 +80,7 @@ class QueryStore extends EventEmitter {
   }
 
   getColumns(){
-    return ast.getColumns(this.query, [])
+    return this.query ? ast.getColumns(this.query, []) : []
   }
 
   getQueryString() {

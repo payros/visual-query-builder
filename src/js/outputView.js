@@ -86,7 +86,7 @@ class ResultsTable extends React.Component {
 					{this.state.dragging && <div className="drop-curtain" onDragOver={this.handleDragOver} onDrop={(ev) => this.handleDrop(ev)}><p>Drop to Add Column to Query</p></div>}
 					{this.state.loading && <Utils.AjaxLoader/>}
 					{!this.state.loading && this.state.headers.length > 0 && this.state.results.length === 0 && <p className="empty-msg">No Results</p>}
-					{!this.state.loading && this.state.headers.length === 0 && this.state.results.length === 0 && <p className="empty-msg">Drop a Column<br></br><span style={{fontWeight:100, fontSize:'80%'}}>or</span><br></br>Type a Query</p>}
+					{!this.state.error && !this.state.loading && this.state.headers.length === 0 && this.state.results.length === 0 && <p className="empty-msg" style={{fontWeight:400, marginTop:'-20px'}}>Drop a Column<br></br><span style={{fontWeight:100, fontSize:'80%'}}>or</span><br></br>Type a Query</p>}
 					{this.state.error && <p id="error-msg">{this.state.errorLog}</p>}
 					{!this.state.error &&  <FlexTable ref="table">
 												<FlexHead>

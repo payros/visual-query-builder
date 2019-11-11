@@ -11,7 +11,7 @@ class ResultsStore extends EventEmitter {
 
   setResults(results) {
     this.results = results
-    this.emit("results-fetched")
+    setTimeout(() => { this.emit("results-fetched") }) // Avoids dispatcher invariant issues
   }
 
   setError(errorLog) {
@@ -31,13 +31,17 @@ class ResultsStore extends EventEmitter {
     switch(action.type) {
         case "FETCH_RESULTS":
             this.emit("results-loading")
-            axios.get('/query', {params: { q:action.query }}).then(res => {
-              if(res.data){
-                this.setResults(res.data)
-              }
-            }).catch(err => {
-              this.setError(err.response.data)
-            })
+            if(action.query.length){
+              axios.get('/query', {params: { q:action.query }}).then(res => {
+                if(res.data){
+                  this.setResults(res.data)
+                }
+              }).catch(err => {
+                this.setError(err.response.data)
+              })              
+            } else {
+              this.setResults([])
+            }
             break
     }
   }
