@@ -33,7 +33,7 @@ class QueryStore extends EventEmitter {
 
       //Check if the column is already listed on the 'select' list 
       if(currColumns.indexOf(column) === -1) {
-        this.query = ast.addSelectColumn(this.query, column)
+        this.query = ast.addSelectColumn(this.query, column, table)
       }
 
       //Check if the table is already on the 'from' list
