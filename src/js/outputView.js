@@ -35,7 +35,7 @@ class ResultsTable extends React.Component {
 		resultsStore.on("results-error", () => {
 			this.setState({error:true, loading:false, errorLog:resultsStore.getErrorLog()})
 		})
-		queryStore.on("query-updated", () => {
+		queryStore.on("query-parsed", () => {
 			this.setState({ headers:queryStore.getColumns() })
 		})
 		schemaStore.on("filtering-toggled", () => {

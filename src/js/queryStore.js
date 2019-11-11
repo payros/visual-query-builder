@@ -70,6 +70,7 @@ class QueryStore extends EventEmitter {
 
   parseQuery(queryStr){ //Assumes the query is valid or empty
     this.query = queryStr.length ? parser.parse(queryStr) : null
+    this.emit("query-parsed");
   }
 
   getColumns(){
