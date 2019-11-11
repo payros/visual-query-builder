@@ -18,6 +18,15 @@ textarea, input {
 	}
 }
 
+input[type='number'] {
+    -moz-appearance:textfield;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+}
+
 /*  select {
 	  	width: 54px;
 	  	border-radius: 4px;
@@ -158,22 +167,42 @@ sidebar {
 			display:flex;
 			flex-wrap:wrap;
 			align-items: flex-end;
-			padding:0.5rem 0.5rem;
+			padding:0;
 
 			> input {
 				background: transparent;
-			    border: 0;
-			    border-bottom: 1px solid #777;
+			    border: none;
 			    max-height: 35px;
-			    width:auto;
-			    margin-top:5px;
+			    width: auto;
+			    margin-top: 0;
+			    padding: 0.6rem 0.5rem;
+			    font-size: 0.8rem;
+			    flex-grow: 1;
+			    overflow:hidden;
+
+			    &:focus {
+			    	background-color: rgba(0, 0, 0, 0.05);
+			    }
 			}
 
 			.MuiInputBase-root {
 				color: #777;
-				border-color:#777;
-				margin-right:5px;
-				font-size:0.7rem;
+				border:none;
+				font-size:0.8rem;
+
+				.MuiInputBase-inputSelect {
+					padding: 0.6rem 0.5rem;
+					padding-right: 24px;
+				}
+
+				.MuiNativeSelect-select:focus {
+					background-color: rgba(0, 0, 0, 0.05);
+				}
+				
+			}
+
+			.MuiInput-underline::before, .MuiInput-underline::after {
+				content:none;
 			}
 		}
 	}
