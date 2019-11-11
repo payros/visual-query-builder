@@ -30,19 +30,13 @@ class ResultsTable extends React.Component {
 			this.setState({error:false, loading:true, results:[]})
 		})
 		resultsStore.on("results-fetched", () => {
-			this.setState((oldState) => {
-				let newState = {error:false, loading:false, results:resultsStore.getResults()}
-				let newHeaders = (newState.results.length ? Object.keys(newState.results[0]) : [])
-
-				//Only update the headers if they changed
-				if(!Utils.isEqualJSON(oldState.headers, newHeaders)){
-					newState.headers = newHeaders
-				}
-				return newState
-			})
+			this.setState({error:false, loading:false, results:resultsStore.getResults()})
 		})
 		resultsStore.on("results-error", () => {
 			this.setState({error:true, loading:false, errorLog:resultsStore.getErrorLog()})
+		})
+		queryStore.on("query-updated", () => {
+			this.setState({ headers:queryStore.getColumns() })
 		})
 		schemaStore.on("filtering-toggled", () => {
 			this.setState({filteringToggle:schemaStore.getFiltering()})

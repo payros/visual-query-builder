@@ -72,6 +72,10 @@ class QueryStore extends EventEmitter {
     this.query = queryStr.length ? parser.parse(queryStr) : null
   }
 
+  getColumns(){
+    return ast.getColumns(this.query, [])
+  }
+
   getQueryString() {
     return this.query ? parser.stringify(this.query).trim() : ""
   }
