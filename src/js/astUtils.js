@@ -3,6 +3,45 @@ import utils from './utils'
 
 let astUtils = {}
 
+//Compresses a list of columns into a starred version of the list
+function colsToStar(oldColumns, tables){
+    const schema = schemaStore.getSchema()
+    let newColumns = oldColumns
+
+    //First replace  all columns with table.*
+    tables.forEach(table => {
+        //Get only columns from the table that are NOT in the current column list
+        const filteredColumns = schema[table].filter(c => oldColumns.indexOf(c.name) === -1)
+
+        // If all columns from the table are in the list, the filteredList length is 0
+        if(filteredColumns.length === 0) {
+            //First filter out all the columns from this table
+            newColumns = newColumns.filter(col => schema[table].map(c => c.name).indexOf(col) === -1)
+            //TO DO Check if the table has an alias when optimizing with table.* and use the alias instead
+            newColumns.unshift(table + ".*")
+        }
+    })
+
+    //Now replace all table.* with a single *
+    const starCols = newColumns.filter(c => c.indexOf(".*") > -1)
+    if(starCols.length === newColumns.length) newColumns = ["*"]
+
+    return newColumns
+}
+
+function getTablesFromCols(columns){
+    const schema = schemaStore.getSchema()
+    let tables = Object.keys(schema).reduce((tbls, tbl) => {
+        //Get only columns from the table that ARE in the current column list
+        const filteredColumns = schema[tbl].filter(c => columns.indexOf(c.name) > -1)
+        //At least one column is in the list -- Add it
+        if(filteredColumns.length) tbls.push({name:tbl, columns:filteredColumns})
+        return tbls
+    }, [])
+    //Now check if the same column is on multiple tables. If so, check which table (if any) only contains that single column and remove it
+    return tables.filter(t => t.columns.length > 1 || t.filter(t2 => t.name !== t2.name && t2.columns.indexOf(t.columns[0]) == -1).length)
+}
+
 //Get all columns in a select query ast tree without the table. prefix
 astUtils.getColumns = function(tree, columnList){
     const schema = schemaStore.getSchema()
@@ -23,10 +62,12 @@ astUtils.getColumns = function(tree, columnList){
             //Just add the single column
             arr.push(vals[vals.length-1])
         }
-      } 
+      } else if (curr.type === "FunctionCall") {
+            arr.push(curr.name + "(" + curr.params.reduce((str, p, i) => str += p.value + (i+1 === curr.params.length ? "" : ",") ,"") + ")") //TO DO Add the function name with a flag
+      }
       return arr
     }, columnList)
-
+    console.log(columnList)
     //Return a list of all expanded columns without the prefix
     return columnList.filter((el, i, self) => i === self.indexOf(el)) //Remove possible duplicates
 }
@@ -66,28 +107,10 @@ astUtils.addSelectColumn = function(tree, column, table) {
 
     //Get current state
     const currColumns = astUtils.getColumns(newTree, [])
-    const currTables = astUtils.getTables(newTree, [table])
-    const schema = schemaStore.getSchema()
-    let newColumns = currColumns
+    const currTables = astUtils.getTables(newTree, [table]) //Include the table of the column you're adding
 
-    //First replace  all columns with table.*
-    currTables.forEach(table => {
-        //Get only columns from the table that are NOT in the current column list
-        const filteredColumns = schema[table].filter(c => currColumns.indexOf(c.name) === -1)
-
-        // If all columns from the table are in the list, the filteredList length is 0
-        if(filteredColumns.length === 0) {
-            //First filter out all the columns from this table
-            newColumns = newColumns.filter(col => schema[table].map(c => c.name).indexOf(col) === -1)
-            //TO DO Check if the table has an alias when optimizing with table.* and use the alias instead
-            newColumns.push(table + ".*")
-        }
-    })
-
-    //Now replace all table.* with a single *
-    const starCols = newColumns.filter(c => c.indexOf(".*") > -1)
-    if(starCols.length === newColumns.length) newColumns = ["*"]
-    // newColumns.reverse()
+    //Convert to * optimized column list
+    let newColumns = colsToStar(currColumns, currTables)
 
     //Finally, add all columns back on the new ast tree
     newTree.value.selectItems.value = newColumns.map(c => { return {type:"Identifier", value:c, alias:null, hasAs:null} })
@@ -95,9 +118,6 @@ astUtils.addSelectColumn = function(tree, column, table) {
     return newTree
 }
 
-//TO DO - Removes the column from the select clause.
-//Additionally it removes any table or tables that no longer have any columns on select by calling removeTable
-astUtils.removeSelectColumn = function(tree, column) {}
 
 //Recursively add table via natural join to the tree
 astUtils.addNaturalJoinTable = function(tree, table) {
@@ -231,6 +251,41 @@ astUtils.removeWhereColumn = function(tree, column, operator) {
         }
         return node
     }  
+}
+
+
+
+//TO DO - Removes the column from the select clause.
+//Additionally it removes any table or tables that no longer have any columns on select by calling removeTable
+astUtils.removeSelectColumn = function(tree, column) {
+    let newTree = JSON.parse(JSON.stringify(tree))
+
+    //Get current state and remove the column -- TO DO support aggregation functions in the select
+    let columns = astUtils.getColumns(newTree, []).filter(c => {c !== column})
+
+    //Check if there are no columns from a particular table
+    const newTables = getTablesFromCols(columns)
+    const currTables = astUtils.getTables(newTree, [])
+    currTables.forEach(table => {
+        if(newTables.indexOf(table) === -1) {
+            //newTree = astUtils.removeNaturalJoinTable(newTree, table)
+        }
+    })
+
+    //Convert to * optimized column list
+    let newColumns = colsToStar(currColumns, newTables)
+
+    //Add columns to the tree
+    newTree.value.selectItems.value = newColumns.map(c => { return {type:"Identifier", value:c, alias:null, hasAs:null} })
+    console.log(currColumns, currColumns)
+
+    //Remove where clause for that column
+
+    //Remove grouping for the column
+
+    //Remove ordering for that colum
+
+    return newTree
 }
 
 export default astUtils

@@ -95,7 +95,7 @@ class ResultsTable extends React.Component {
     }
 
 	render(){
-		const rows = (this.state.results.length ? this.state.results : []).map(r => this.state.headers.map(h => r[h]))
+		const rows = (this.state.results.length ? this.state.results : []).map(r => this.state.headers.map(h => r[ h.indexOf("(") === -1 ? h : h.substring(0, h.indexOf("("))]))
 		const schema = schemaStore.getSchema()
 		const allColumns = Object.keys(schema).reduce((arr, table) => arr.concat(schema[table]), [])
 		const headerCells = this.state.headers.map(col => <FlexCell className="column-remove-btn" onClick={() => this.handleRemoveColumn(col)} >{col}</FlexCell>)

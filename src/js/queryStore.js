@@ -10,6 +10,7 @@ class QueryStore extends EventEmitter {
   constructor() {
     super()
     this.query = null
+    console.log(parser.parse("SELECT count(name) FROM carriers"))
 
     schemaStore.on("filtering-toggled", () => {
       const isFilteringChecked = schemaStore.getFiltering()
@@ -46,9 +47,8 @@ class QueryStore extends EventEmitter {
   }
 
   removeColumn(col) {
-    //TO DO Remove the column
-    //ast.removeColumn(col)
-    //this.emit("query-updated");
+    this.query = ast.removeSelectColumn(this.query, col)
+    this.emit("query-updated");
   }
 
   filterColumn(column, operator, value) {
