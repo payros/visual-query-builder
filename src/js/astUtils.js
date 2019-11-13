@@ -309,8 +309,7 @@ astUtils.removeSelectColumn = function(tree, column) {
     let newTree = JSON.parse(JSON.stringify(tree))
 
     //Get current state and remove the column -- TO DO support aggregation functions in the select
-    let columns = astUtils.getColumns(newTree, []).filter(c => {c !== column})
-
+    let columns = astUtils.getColumns(newTree, []).filter(c => c !== column)
     //Check if there are no columns from a particular table
     const newTables = getTablesFromCols(columns) //the function is returning an empty array.
     //const newTables = ["weekdays","carriers"]  // for testing purposes as getTablesFromCols isn't working
