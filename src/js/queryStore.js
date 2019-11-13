@@ -89,7 +89,6 @@ class QueryStore extends EventEmitter {
   }
 
   getColumns(){
-    console.log(this.query ? ast.getColumns(this.query, [], true) : [])
     return this.query ? ast.getColumns(this.query, [], true) : []
   }
 

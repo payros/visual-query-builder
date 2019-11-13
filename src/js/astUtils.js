@@ -217,15 +217,14 @@ astUtils.addNaturalJoinTable = function(tree, table) {
 //implementation built on remove Where
 astUtils.removeNaturalJoinTable = function(tree, table) {
     let newTree = JSON.parse(JSON.stringify(tree))
-    console.log("recurse start node")
-    console.log(newTree.value.from.value[0].value)
+
     newTree.value.from.value[0].value = recurse(newTree.value.from.value[0].value)
     return newTree
 
     function recurse(node){
         if(!node) return node
         const nodeType = node.type
-        console.log("nodetype =",nodeType)
+
         switch(nodeType){
             case 'NaturalJoinTable':
                 if( node.left.type === "TableFactor" && node.left.value.value === table) {
