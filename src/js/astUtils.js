@@ -331,8 +331,7 @@ astUtils.removeSelectColumn = function(tree, column) {
             //remove all tables from tree        
         }
     })
-    //newTree = updateTables(newTree,newTables)
-    console.log(columns, newTables)
+    
     //Convert to * optimized column list
     let newColumns = colsToStar(columns, newTables)
 
