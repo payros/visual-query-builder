@@ -90,7 +90,6 @@ class ResultsTable extends React.Component {
     }
 
     handleRemoveColumn(colIdx){
-    	console.log("handleRemove", colIdx)
     	dispatcher.dispatch({ type:'COLUMN_REMOVE', colIdx:colIdx })
     }
 
@@ -99,7 +98,17 @@ class ResultsTable extends React.Component {
 		const schema = schemaStore.getSchema()
 		const allColumns = Object.keys(schema).reduce((arr, table) => arr.concat(schema[table]), [])
 		const headerCells = this.state.headers.map((col, idx) => <FlexCell className="column-remove-btn" onClick={() => this.handleRemoveColumn(idx)} >{col}</FlexCell>)
-		const filterCells = this.state.headers.map(v => <FilterCell column={allColumns[allColumns.map(c => c.name).indexOf(v)]}/>)
+		const filterCells = this.state.headers.map(headerStr => {
+			let headerType = null
+			const funcMatch = headerStr.match(/([a-zA-Z]+)\((.+)\)/)
+			if(funcMatch && ['avg', 'sum', 'min', 'max', 'count'].indexOf(funcMatch[1]) === -1) {
+				headerType = "string"
+			} else if(funcMatch === null) {
+				const headerObjs = allColumns.filter(c => c.name === headerStr)
+				headerType = headerObjs.length ? headerObjs[0].type : "string"
+			}
+			return <FilterCell column={{name:headerStr, type:headerType}}/>
+		})
 		const groupCells = this.state.headers.map(v => <GroupCell column={allColumns[allColumns.map(c => c.name).indexOf(v)]}/>)
 		const orderCells = this.state.headers.map(v => <OrderCell colNum={this.state.headers.length} column={allColumns[allColumns.map(c => c.name).indexOf(v)]}/>)
 
@@ -167,7 +176,7 @@ class FilterCell extends React.Component {
 						<option value=">" >greater than</option>
 						<option value="<>" >not equal</option>
         			</NativeSelect>}
-					<input name="value" type={this.props.column.type === "integer" ? 'number' : 'text'} placeholder={"filter " + this.props.column.name} value={this.state.value} onChange={(ev) => this.handleChange(ev)}/>
+					{this.props.column.type !== null && <input name="value" type={this.props.column.type === "integer" ? 'number' : 'text'} placeholder={"filter " + this.props.column.name} value={this.state.value} onChange={(ev) => this.handleChange(ev)}/>}
 				</FlexCell>
 	}
 }

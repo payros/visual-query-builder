@@ -14,6 +14,14 @@ function isTableRedundant(table, tableIndex, tables){
     return otherTablesWithCol.length > 0
 }
 
+// converts a function object {name:'funcName' params:['param1', 'param2']} to string 'funcName(param1,param2)'
+function funcToString(funcObj){
+    if(funcObj.type !== "FunctionCall") return ""
+    const funcName = funcObj.name
+    const funcParams = funcObj.params.reduce((str, p, i) => str += (p.value ? p.value : p) + (i+1 === funcObj.params.length ? "" : ",") ,"")
+    return funcName + "(" + funcParams + ")"
+}
+
 //Compresses a list of columns into a starred version of the list
 function colsToStar(oldColumns, tables){
     const schema = schemaStore.getSchema()
@@ -46,12 +54,26 @@ function mapColString(colStr){
     if(funcMatch){
         colObj.type = "FuncionCall"
         colObj.name = funcMatch[1]
-        colObj.params = funcMatch[2].split(',').map(p => { return { type:"Identifier", name:p }})
+        colObj.params = funcMatch[2].indexOf("*") > -1 ? [funcMatch[2]] : funcMatch[2].split(',').map(p => { return { type:"Identifier", name:p }})
     } else {
         colObj.type = "Identifier"
         colObj.value = colStr
     }
     return colObj
+}
+
+function getOperatorForColumn(colStr){
+        let colType = null
+        const funcMatch = colStr.match(/([a-zA-Z]+)\((.+)\)/)
+        if(funcMatch && ['avg', 'sum', 'min', 'max', 'count'].indexOf(funcMatch[1]) === -1) {
+            colType = "string"
+        } else if(funcMatch === null) {
+            const schema = schemaStore.getSchema()
+            const allColumns = Object.keys(schema).reduce((arr, table) => arr.concat(schema[table]), [])
+            const headerObjs = allColumns.filter(c => c.name === colStr)
+            colType = headerObjs.length ? headerObjs[0].type : "string"
+        }
+        return colType === "integer" ? "=" : "like"
 }
 
 function getTablesFromCols(columns){
@@ -89,7 +111,7 @@ astUtils.getColumns = function(tree, columnList, wrap){
         }
       } else if (curr.type === "FunctionCall") {
             if(wrap){
-                arr.push(curr.name + "(" + curr.params.reduce((str, p, i) => str += p.value + (i+1 === curr.params.length ? "" : ",") ,"") + ")") //TO DO Add the function name with a flag
+                arr.push(funcToString(curr))
             } else {
                 //Push each param individually (if it is a column a.k.a 'Identifier')
                 arr = arr.concat(curr.params.filter(p => p.type === "Identifier").map(p => p.value))
@@ -97,7 +119,7 @@ astUtils.getColumns = function(tree, columnList, wrap){
       }
       return arr
     }, columnList)
-    console.log(columnList)
+
     //Return a list of all expanded columns without the prefix
     return columnList.filter((el, i, self) => i === self.indexOf(el)) //Remove possible duplicates
 }
@@ -278,7 +300,12 @@ astUtils.getWhereColumn = function(tree, column) {
           case 'OrExpression':
             return recurse(node.left) || recurse(node.right)
           default:
-            return node.left && node.left.type === "Identifier" && node.left.value == column ? node : null
+            if(node.left && node.left.type === "Identifier" && node.left.value == column || 
+               node.left && node.left.type === "FunctionCall" && funcToString(node.left) == column) {
+                return node
+            } else {
+                return null
+            }
         }
     }    
 }
@@ -297,9 +324,9 @@ astUtils.removeWhereColumn = function(tree, column, operator) {
         switch(nodeType){
             case 'AndExpression':
             case 'OrExpression':
-                if(node.left.type === targetType && node.left.left.value === column) {
+                if(node.left.type === targetType && (node.left.left.value === column || funcToString(node.left.left) == column)) {
                     node = node.right
-                } else if(node.right.type === targetType && node.right.left.value === column){
+                } else if(node.right.type === targetType && (node.right.left.value === column || funcToString(node.right.left) == column)){
                     node = node.left
                 } else {
                     node.left = recurse(node.left)
@@ -307,7 +334,7 @@ astUtils.removeWhereColumn = function(tree, column, operator) {
                 }
                 break
             default:
-                node = node.type === targetType && node.left.value === column ? null : node
+                node = node.type === targetType && (node.left.value === column || funcToString(node.left) == column) ? null : node
         }
         return node
     }  
@@ -340,9 +367,13 @@ function updateTables(tree,newTables) {
 astUtils.removeSelectColumn = function(tree, columnIdx) {
     let newTree = JSON.parse(JSON.stringify(tree))
 
+    //Get the current columns -- including function calls
+    let columns = astUtils.getColumns(newTree, [], true)
+    //Get the name of the column being removed
+    const colName = columns[columnIdx]
     //Get current state and remove the column
-    let columns = astUtils.getColumns(newTree, [], true).filter((c,i) => i !== columnIdx)
-    console.log("new columns", columnIdx, columns, astUtils.getColumns(newTree, [], true))
+    columns = columns.filter((c,i) => i !== columnIdx) //Includes wrapped function calls
+
     //If the last column was removed, return null
     if(!columns.length) return null
 
@@ -358,13 +389,13 @@ astUtils.removeSelectColumn = function(tree, columnIdx) {
         }
     })
 
-    columns.forEach(col => {
+
     //Remove where clause for that column
+    newTree = astUtils.removeWhereColumn(newTree, colName, getOperatorForColumn(colName))
 
-    //Remove grouping for the column
+    //TO DO Remove grouping for the column
 
-    //Remove ordering for that colum
-    })
+    //TO DO Remove ordering for that colum
 
     //Convert to * optimized column list
     let newColumns = colsToStar(columns, newTables)

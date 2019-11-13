@@ -10,7 +10,7 @@ class QueryStore extends EventEmitter {
   constructor() {
     super()
     this.query = null
-    console.log(parser.parse("SELECT count(name) FROM carriers"))
+    // console.log(parser.parse("SELECT count(name) FROM carriers"))
 
     schemaStore.on("filtering-toggled", () => {
       const isFilteringChecked = schemaStore.getFiltering()
@@ -84,6 +84,7 @@ class QueryStore extends EventEmitter {
 
   parseQuery(queryStr){ //Assumes the query is valid or empty
     this.query = queryStr.length ? parser.parse(queryStr) : null
+    console.log(this.query)
     this.emit("query-parsed");
   }
 
@@ -93,6 +94,7 @@ class QueryStore extends EventEmitter {
   }
 
   getQueryString() {
+    console.log(this.query)
     return this.query ? parser.stringify(this.query).trim() : ""
   }
 
