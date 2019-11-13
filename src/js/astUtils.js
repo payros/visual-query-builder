@@ -1,5 +1,6 @@
 import schemaStore from './schemaStore'
 import utils from './utils'
+import parser from 'js-sql-parser'
 
 let astUtils = {}
 
@@ -253,7 +254,27 @@ astUtils.removeWhereColumn = function(tree, column, operator) {
     }  
 }
 
-
+//returns a tree that only has newTables elements in it's FROM clause
+function updateTables(tree,newTables) {
+    let newTree = JSON.parse(JSON.stringify(tree))
+    let queryStr = "SELECT * FROM"
+    
+    var i
+    //add all talbes to query string
+    for(i = 0; i < newTables.length; i++) {
+        if(i == 0) {
+            queryStr += " " + newTables[i]
+        }
+        else {
+            queryStr += " NATURAL JOIN " + newTables[i]
+        }
+         
+    }
+    let tempTree = parser.parse(queryStr)
+    //deep copy of tempTree's FROM to newTree's FROM
+     newTree.value.from = JSON.parse(JSON.stringify(tempTree.value.from))
+     return newTree
+}
 
 //TO DO - Removes the column from the select clause.
 //Additionally it removes any table or tables that no longer have any columns on select by calling removeTable
@@ -264,13 +285,18 @@ astUtils.removeSelectColumn = function(tree, column) {
     let columns = astUtils.getColumns(newTree, []).filter(c => {c !== column})
 
     //Check if there are no columns from a particular table
-    const newTables = getTablesFromCols(columns)
+    const newTables = getTablesFromCols(columns) //the function is returning an empty array.
+    //const newTables = ["carriers", "months"]  // for testing purposes as getTablesFromCols isn't working
     const currTables = astUtils.getTables(newTree, [])
-    currTables.forEach(table => {
+    /*currTables.forEach(table => {
         if(newTables.indexOf(table) === -1) {
             //newTree = astUtils.removeNaturalJoinTable(newTree, table)
+            //remove all tables from tree
+            
         }
-    })
+    })*/
+    newTree = updateTables(newTree,newTables)
+    
 
     //Convert to * optimized column list
     let newColumns = colsToStar(currColumns, newTables)
