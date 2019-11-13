@@ -4,6 +4,16 @@ import parser from 'js-sql-parser'
 
 let astUtils = {}
 
+// table has the structure {name:'tableName', columns:['column1', 'column2', 'column3']}
+function isTableRedundant(table, tableIndex, tables){
+    //Table has more than one column, therefore it is not redundant
+    if(table.columns.length > 1) return true
+    //If table has a single column, check to see if it is on other tables
+    const columnToCheck = table.columns[0]
+    const otherTablesWithCol = tables.filter(t => t.name !== table.name && t.columns.indexOf(columnToCheck) > -1)
+    return otherTablesWithCol.length > 0
+}
+
 //Compresses a list of columns into a starred version of the list
 function colsToStar(oldColumns, tables){
     const schema = schemaStore.getSchema()
@@ -40,7 +50,7 @@ function getTablesFromCols(columns){
         return tbls
     }, [])
     //Now check if the same column is on multiple tables. If so, check which table (if any) only contains that single column and remove it
-    return tables.filter(t => t.columns.length > 1 || t.filter(t2 => t.name !== t2.name && t2.columns.indexOf(t.columns[0]) == -1).length)
+    return (columns.length === 1 ? [tables[0]] : tables.filter(isTableRedundant)).map(t => t.name)
 }
 
 //Get all columns in a select query ast tree without the table. prefix
@@ -322,8 +332,7 @@ astUtils.removeSelectColumn = function(tree, column) {
         }
     })
     //newTree = updateTables(newTree,newTables)
-    
-    return newTree //for now
+    console.log(columns, newTables)
     //Convert to * optimized column list
     let newColumns = colsToStar(columns, newTables)
 
