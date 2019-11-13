@@ -160,7 +160,34 @@ astUtils.addNaturalJoinTable = function(tree, table) {
 }
 
 //Recursively removes table from tree
-astUtils.removeNaturalJoinTable = function(tree, table) {}
+//implementation built on remove Where
+astUtils.removeNaturalJoinTable = function(tree, table) {
+    let newTree = JSON.parse(JSON.stringify(tree))
+    console.log("recurse start node")
+    console.log(newTree.value.from.value[0].value)
+    newTree.value.from.value[0].value = recurse(newTree.value.from.value[0].value)
+    return newTree
+
+    function recurse(node){
+        if(!node) return node
+        const nodeType = node.type
+        console.log("nodetype =",nodeType)
+        switch(nodeType){
+            case 'NaturalJoinTable':
+                if( node.left.type === "TableFactor" && node.left.value.value === table) {
+                    node = node.right
+                } else if(node.right.type === "TableFactor" && node.right.value.value === table){
+                    node = node.left
+                } else {
+                    node.left = recurse(node.left)
+                    node.right = recurse(node.right)
+                }
+                break
+        }
+        return node
+    }  
+    
+}
 
 //adds AND ${column} ${operator} ${val} to end of WHERE clause
 /**
@@ -286,24 +313,24 @@ astUtils.removeSelectColumn = function(tree, column) {
 
     //Check if there are no columns from a particular table
     const newTables = getTablesFromCols(columns) //the function is returning an empty array.
-    //const newTables = ["carriers", "months"]  // for testing purposes as getTablesFromCols isn't working
+    //const newTables = ["weekdays","carriers"]  // for testing purposes as getTablesFromCols isn't working
     const currTables = astUtils.getTables(newTree, [])
-    /*currTables.forEach(table => {
+    console.log("currTables =",currTables)
+    currTables.forEach(table => {
         if(newTables.indexOf(table) === -1) {
-            //newTree = astUtils.removeNaturalJoinTable(newTree, table)
-            //remove all tables from tree
-            
+            newTree = astUtils.removeNaturalJoinTable(newTree, table)
+            //remove all tables from tree        
         }
-    })*/
-    newTree = updateTables(newTree,newTables)
+    })
+    //newTree = updateTables(newTree,newTables)
     
-
+    return newTree //for now
     //Convert to * optimized column list
-    let newColumns = colsToStar(currColumns, newTables)
+    let newColumns = colsToStar(columns, newTables)
 
     //Add columns to the tree
     newTree.value.selectItems.value = newColumns.map(c => { return {type:"Identifier", value:c, alias:null, hasAs:null} })
-    console.log(currColumns, currColumns)
+    console.log(columns, columns)
 
     //Remove where clause for that column
 
