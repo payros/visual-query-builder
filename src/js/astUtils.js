@@ -323,7 +323,6 @@ astUtils.removeSelectColumn = function(tree, column) {
     })
     //newTree = updateTables(newTree,newTables)
     
-    return newTree //for now
     //Convert to * optimized column list
     let newColumns = colsToStar(columns, newTables)
 
