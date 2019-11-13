@@ -30,7 +30,7 @@ class QueryStore extends EventEmitter {
       this.query = parser.parse("SELECT " + column + " FROM " + table)
     } else {
       const currTables = ast.getTables(this.query, [])
-      const currColumns = ast.getColumns(this.query, [])
+      const currColumns = ast.getColumns(this.query, [], false) //return all the column names (unwrapped)
 
       //Check if the column is already listed on the 'select' list (or is star)
       if(column === "*" || currColumns.indexOf(column) === -1) {
@@ -46,8 +46,8 @@ class QueryStore extends EventEmitter {
     this.emit("query-updated");
   }
 
-  removeColumn(col) {
-    this.query = ast.removeSelectColumn(this.query, col)
+  removeColumn(colIdx) {
+    this.query = ast.removeSelectColumn(this.query, colIdx)
     this.emit("query-updated");
   }
 
@@ -88,7 +88,8 @@ class QueryStore extends EventEmitter {
   }
 
   getColumns(){
-    return this.query ? ast.getColumns(this.query, []) : []
+    console.log(this.query ? ast.getColumns(this.query, [], true) : [])
+    return this.query ? ast.getColumns(this.query, [], true) : []
   }
 
   getQueryString() {
@@ -106,7 +107,7 @@ class QueryStore extends EventEmitter {
           break
 
         case "COLUMN_REMOVE":
-          this.removeColumn(action.column)
+          this.removeColumn(action.colIdx)
           break
 
         case "UPDATE_QUERY":

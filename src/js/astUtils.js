@@ -40,6 +40,20 @@ function colsToStar(oldColumns, tables){
     return newColumns
 }
 
+function mapColString(colStr){
+    const funcMatch = colStr.match(/([a-zA-Z]+)\((.+)\)/)
+    let colObj = { alias:null, hasAs:null } 
+    if(funcMatch){
+        colObj.type = "FuncionCall"
+        colObj.name = funcMatch[1]
+        colObj.params = funcMatch[2].split(',').map(p => { return { type:"Identifier", name:p }})
+    } else {
+        colObj.type = "Identifier"
+        colObj.value = colStr
+    }
+    return colObj
+}
+
 function getTablesFromCols(columns){
     const schema = schemaStore.getSchema()
     let tables = Object.keys(schema).reduce((tbls, tbl) => {
@@ -54,7 +68,7 @@ function getTablesFromCols(columns){
 }
 
 //Get all columns in a select query ast tree without the table. prefix
-astUtils.getColumns = function(tree, columnList){
+astUtils.getColumns = function(tree, columnList, wrap){
     const schema = schemaStore.getSchema()
     const currTables = astUtils.getTables(tree, [])
     //This will get you a list of all literal columns
@@ -74,7 +88,12 @@ astUtils.getColumns = function(tree, columnList){
             arr.push(vals[vals.length-1])
         }
       } else if (curr.type === "FunctionCall") {
-            arr.push(curr.name + "(" + curr.params.reduce((str, p, i) => str += p.value + (i+1 === curr.params.length ? "" : ",") ,"") + ")") //TO DO Add the function name with a flag
+            if(wrap){
+                arr.push(curr.name + "(" + curr.params.reduce((str, p, i) => str += p.value + (i+1 === curr.params.length ? "" : ",") ,"") + ")") //TO DO Add the function name with a flag
+            } else {
+                //Push each param individually (if it is a column a.k.a 'Identifier')
+                arr = arr.concat(curr.params.filter(p => p.type === "Identifier").map(p => p.value))
+            }
       }
       return arr
     }, columnList)
@@ -117,14 +136,17 @@ astUtils.addSelectColumn = function(tree, column, table) {
     newTree.value.selectItems.value.push({type:"Identifier", value:column, alias:null, hasAs:null})
 
     //Get current state
-    const currColumns = astUtils.getColumns(newTree, [])
+    const currColumns = astUtils.getColumns(newTree, [], true) //Wrap function. We need to diferentiate between functions and regular columns
     const currTables = astUtils.getTables(newTree, [table]) //Include the table of the column you're adding
+
+    // const colsList = currColumns.filter(c => !c.match(/[a-zA-Z]+\(.+\)/))
+    // const funcList = currColumns.filter(c => c.match(/[a-zA-Z]+\(.+\)/))
 
     //Convert to * optimized column list
     let newColumns = colsToStar(currColumns, currTables)
 
     //Finally, add all columns back on the new ast tree
-    newTree.value.selectItems.value = newColumns.map(c => { return {type:"Identifier", value:c, alias:null, hasAs:null} })
+    newTree.value.selectItems.value = newColumns.map(mapColString)
 
     return newTree
 }
@@ -315,20 +337,20 @@ function updateTables(tree,newTables) {
 
 //TO DO - Removes the column from the select clause.
 //Additionally it removes any table or tables that no longer have any columns on select by calling removeTable
-astUtils.removeSelectColumn = function(tree, column) {
+astUtils.removeSelectColumn = function(tree, columnIdx) {
     let newTree = JSON.parse(JSON.stringify(tree))
 
-    //Get current state and remove the column -- TO DO support aggregation functions in the select
-    let columns = astUtils.getColumns(newTree, []).filter(c => c !== column)
-
+    //Get current state and remove the column
+    let columns = astUtils.getColumns(newTree, [], true).filter((c,i) => i !== columnIdx)
+    console.log("new columns", columnIdx, columns, astUtils.getColumns(newTree, [], true))
     //If the last column was removed, return null
     if(!columns.length) return null
 
     //Check if there are no columns from a particular table
-    const newTables = getTablesFromCols(columns) //the function is returning an empty array.
+    const newTables = getTablesFromCols(astUtils.getColumns(newTree, [], false)) //the function is returning an empty array.
     //const newTables = ["weekdays","carriers"]  // for testing purposes as getTablesFromCols isn't working
     const currTables = astUtils.getTables(newTree, [])
-    console.log("currTables =",currTables)
+
     currTables.forEach(table => {
         if(newTables.indexOf(table) === -1) {
             newTree = astUtils.removeNaturalJoinTable(newTree, table)
@@ -336,18 +358,19 @@ astUtils.removeSelectColumn = function(tree, column) {
         }
     })
 
-    //Convert to * optimized column list
-    let newColumns = colsToStar(columns, newTables)
-
-    //Add columns to the tree
-    newTree.value.selectItems.value = newColumns.map(c => { return {type:"Identifier", value:c, alias:null, hasAs:null} })
-    console.log(columns, columns)
-
+    columns.forEach(col => {
     //Remove where clause for that column
 
     //Remove grouping for the column
 
     //Remove ordering for that colum
+    })
+
+    //Convert to * optimized column list
+    let newColumns = colsToStar(columns, newTables)
+
+    //Add columns to the tree
+    newTree.value.selectItems.value = newColumns.map(mapColString)
 
     return newTree
 }
