@@ -21,6 +21,10 @@ export default  {
         }
         return headerObjs.length ? headerObjs[0].type : "string"
     },
+    getStringFromHTML:(html) => {
+        // if(html = "<p>Type SQL Query</p>") return "Type SQL Query"
+        return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ')
+    },
     //Filter an array by a value matching certain properties
     filterByProps:(arr, val, props) => arr.filter(o => props.reduce((bool,prop) => bool = bool || (o[prop] && o[prop].toLowerCase().indexOf(val.toLowerCase()) > -1), false)),
     AjaxLoader:() => <div className="lds-css"><div className="lds-ellipsis"><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div><div><div></div></div></div></div>,

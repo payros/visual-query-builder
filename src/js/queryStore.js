@@ -80,6 +80,10 @@ class QueryStore extends EventEmitter {
     this.emit("query-updated");
   }
 
+  getGroupByColumn(column) {
+    return ast.getGroupByColumn(column)
+  }
+
   orderColumn(column, order, sort){
     //TO DO add ordering to the ast tree
   }
@@ -112,8 +116,16 @@ class QueryStore extends EventEmitter {
     return this.query ? parser.stringify(this.query).trim() : ""
   }
 
-  getQueryHTML() {
-    return ""
+  getQueryHTML(str) {
+    // console.log("string", str)
+    let query = str || this.getQueryString() || ""
+    let html = '<p>' + query + '</p>'
+    html = html.replace(/(select) /i, '<span class="clause select">$1</span>&nbsp;')
+    // html = query.replace(/(having|where)/ig, '<span class="where">$1</span>')
+    // html = query.replace(/(group by)/i, '<span class="group-by">$1</span>')
+    // html = query.replace(/(order by)/i, '<span class="order-by">$1</span>')
+    // console.log("HTML", html)
+    return html
   }
 
   handleActions(action) {

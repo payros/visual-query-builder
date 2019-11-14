@@ -297,8 +297,7 @@ sidebar {
 	background-color:#aaa;
 	box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
 
-	textarea {
-		resize:none;
+	.input-form {
 		width:100%;
 		height:100%;
 		padding:2%;
@@ -307,5 +306,18 @@ sidebar {
 		background-color:transparent;
 		color:#fff;
 		font-size:1.4rem;
+
+		p {
+			margin:0;
+		}
+
+		.clause {
+			border-radius: 5px;
+    		padding: 2px 5px;
+		}
+
+		.select {
+    		background-color: $primary-dark;
+		}
 	}
 }

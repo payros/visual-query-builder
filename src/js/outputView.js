@@ -174,13 +174,13 @@ class FilterCell extends React.Component {
 class GroupCell extends React.Component {
 	constructor(props) {
     	super(props)   	
-    	this.state = {func:""}
+    	this.state = {func:queryStore.getGroupByColumn(this.props.column.name)}
   	}
 
   	componentWillMount(){
 		resultsStore.on("results-fetched", () => {
-			//TO DO update grouping value based on existing query
-			//this.setState({func:newFunc})
+			console.log(this.props.column.name,queryStore.getGroupByColumn(this.props.column.name))
+			this.setState({func:queryStore.getGroupByColumn(this.props.column.name)})
 		})
 	}
 
@@ -197,7 +197,7 @@ class GroupCell extends React.Component {
 
 	render(){
 		return <FlexCell className="group" {...this.props} >
-					<NativeSelect value={this.state.operator} onChange={(ev) => this.handleChange(ev)} inputProps={{ name: 'func' }}>
+					<NativeSelect value={this.state.func} onChange={(ev) => this.handleChange(ev)} inputProps={{ name: 'func' }}>
 						<option value="" >unique</option>
 						<option value="COUNT" >count</option>
 						{this.props.column.type === "integer" &&  

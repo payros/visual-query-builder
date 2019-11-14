@@ -86,7 +86,7 @@ function useHaving(colStr){
 
 function unwrapAggregateColumn(colStr){
         const funcMatch = colStr.match(/([a-zA-Z]+)\((.+)\)/)
-        if(funcMatch && ['avg', 'sum', 'min', 'max', 'count'].indexOf(funcMatch[1].toLowerCase()) === -1) {
+        if(funcMatch && ['avg', 'sum', 'min', 'max', 'count'].indexOf(funcMatch[1].toLowerCase()) > -1) {
             return funcMatch[2]
         }
 
@@ -213,7 +213,7 @@ astUtils.addGroupByColumn = function(tree, colIdx, func){
 
     // We're adding an aggregate function
     if(func.length) {
-        const colName = columns[colIdx]
+        const colName = unwrapAggregateColumn(columns[colIdx])
         columns[colIdx] = func + "(" + colName + ")"
 
         // Remove the column from the group by array
@@ -241,7 +241,17 @@ astUtils.addGroupByColumn = function(tree, colIdx, func){
 
 //Unwraps the column or removes it from the "group by" list (used when a column is removed from the table)
 astUtils.removeGroupByColumn = function(tree, col){
+    let newTree = JSON.parse(JSON.stringify(tree))
+    let newColumns = astUtils.getColumns(newTree, [], true).map(unwrapAggregateColumn)
 
+    if(newTree.value.groupBy !== null) {
+        newTree.value.groupBy.value = newTree.value.groupBy.value.filter(v => v.value.value !== col)
+    }
+
+    //Finally add the new select columns to the tree
+    newTree.value.selectItems.value = newColumns.map(mapColString)
+
+    return newTree
 }
 
 // Returns a new tree with all select columns in the groupBy clause, unless they are wrapped
@@ -282,13 +292,17 @@ astUtils.removeAllGrouping = function(tree){
     //Finally, set groupBy to null
     newTree.value.groupBy = null
 
+    //Finally, set having to null
+    newTree.value.having = null
+
     return newTree
 }
 
 
 // Gets the function value for a column or returns "" if column is unwrapped - used to preset the values of the forms
-astUtils.getGroupByColumn = function(tree, col){
-
+astUtils.getGroupByColumn = function(col){
+    const funcMatch = col.match(/([a-zA-Z]+)\((.+)\)/)
+    return funcMatch && ['avg', 'sum', 'min', 'max', 'count'].indexOf(funcMatch[1].toLowerCase()) > -1 ? funcMatch[1].toUpperCase() : ""
 }
 
 
@@ -539,7 +553,7 @@ astUtils.removeSelectColumn = function(tree, columnIdx) {
     newTree = astUtils.removeWhereColumn(newTree, colName, getOperatorForColumn(colName))
 
     //TO DO Remove grouping for the column
-    //newTree = astUtils.removeGroupByColumn(newTree, colName)
+    newTree = astUtils.removeGroupByColumn(newTree, colName)
 
     //TO DO Remove ordering for that colum
 
