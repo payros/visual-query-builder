@@ -41,6 +41,7 @@ class SchemaStore extends EventEmitter {
 
   setGrouping(checked){
     this.grouping = checked
+
     this.emit("grouping-toggled")
   }
 

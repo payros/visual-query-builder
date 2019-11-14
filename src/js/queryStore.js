@@ -20,6 +20,19 @@ class QueryStore extends EventEmitter {
         this.emit("query-updated");
       }
     })
+
+    schemaStore.on("grouping-toggled", () => {
+      if(this.query !== null) {
+        const isGroupingChecked = schemaStore.getGrouping()
+        if(isGroupingChecked) {
+          this.query = ast.addAllGrouping(this.query)
+        } else {
+          this.query = ast.removeAllGrouping(this.query)
+        }
+        this.emit("query-updated");
+      }
+
+    })
   }
 
   addColumn(col) {
@@ -61,8 +74,10 @@ class QueryStore extends EventEmitter {
     setTimeout(() => { this.emit("query-updated") })  // Avoids dispatcher invariant issues
   }
 
-  groupColumn(column, func){
-    //TO DO add grouping to the ast tree
+  groupColumn(colIdx, func){
+    this.query = ast.addGroupByColumn(this.query, colIdx, func)
+    console.log(this.query)
+    this.emit("query-updated");
   }
 
   orderColumn(column, order, sort){

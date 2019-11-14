@@ -4,6 +4,9 @@ import parser from 'js-sql-parser'
 
 let astUtils = {}
 
+/* #############   PRIVATE FUNCTIONS   ############# */
+
+
 // table has the structure {name:'tableName', columns:['column1', 'column2', 'column3']}
 function isTableRedundant(table, tableIndex, tables){
     //Table has more than one column, therefore it is not redundant
@@ -52,9 +55,9 @@ function mapColString(colStr){
     const funcMatch = colStr.match(/([a-zA-Z]+)\((.+)\)/)
     let colObj = { alias:null, hasAs:null } 
     if(funcMatch){
-        colObj.type = "FuncionCall"
+        colObj.type = "FunctionCall"
         colObj.name = funcMatch[1]
-        colObj.params = funcMatch[2].indexOf("*") > -1 ? [funcMatch[2]] : funcMatch[2].split(',').map(p => { return { type:"Identifier", name:p }})
+        colObj.params = funcMatch[2].indexOf("*") > -1 ? [funcMatch[2]] : funcMatch[2].split(',').map(p => { return { type:"Identifier", value:p }})
     } else {
         colObj.type = "Identifier"
         colObj.value = colStr
@@ -65,7 +68,7 @@ function mapColString(colStr){
 function getOperatorForColumn(colStr){
         let colType = null
         const funcMatch = colStr.match(/([a-zA-Z]+)\((.+)\)/)
-        if(funcMatch && ['avg', 'sum', 'min', 'max', 'count'].indexOf(funcMatch[1]) === -1) {
+        if(funcMatch && ['avg', 'sum', 'min', 'max', 'count'].indexOf(funcMatch[1].toLowerCase()) === -1) {
             colType = "string"
         } else if(funcMatch === null) {
             const schema = schemaStore.getSchema()
@@ -74,6 +77,20 @@ function getOperatorForColumn(colStr){
             colType = headerObjs.length ? headerObjs[0].type : "string"
         }
         return colType === "integer" ? "=" : "like"
+}
+
+function useHaving(colStr){
+    const funcMatch = colStr.match(/([a-zA-Z]+)\((.+)\)/)
+    return funcMatch && ['avg', 'sum', 'min', 'max', 'count'].indexOf(funcMatch[1].toLowerCase()) > -1 
+}
+
+function unwrapAggregateColumn(colStr){
+        const funcMatch = colStr.match(/([a-zA-Z]+)\((.+)\)/)
+        if(funcMatch && ['avg', 'sum', 'min', 'max', 'count'].indexOf(funcMatch[1].toLowerCase()) === -1) {
+            return funcMatch[2]
+        }
+
+        return colStr
 }
 
 function getTablesFromCols(columns){
@@ -88,6 +105,40 @@ function getTablesFromCols(columns){
     //Now check if the same column is on multiple tables. If so, check which table (if any) only contains that single column and remove it
     return (columns.length === 1 ? [tables[0]] : tables.filter(isTableRedundant)).map(t => t.name)
 }
+
+//returns a tree that only has newTables elements in it's FROM clause
+function updateTables(tree,newTables) {
+    let newTree = JSON.parse(JSON.stringify(tree))
+    let queryStr = "SELECT * FROM"
+    
+    var i
+    //add all talbes to query string
+    for(i = 0; i < newTables.length; i++) {
+        if(i == 0) {
+            queryStr += " " + newTables[i]
+        }
+        else {
+            queryStr += " NATURAL JOIN " + newTables[i]
+        }
+         
+    }
+    let tempTree = parser.parse(queryStr)
+    //deep copy of tempTree's FROM to newTree's FROM
+     newTree.value.from = JSON.parse(JSON.stringify(tempTree.value.from))
+     return newTree
+}
+
+
+
+
+
+
+/* #############   PUBLIC FUNCTIONS   ############# */
+
+
+
+
+/* ------- GET FUNCTIONS ------- */
 
 //Get all columns in a select query ast tree without the table. prefix
 astUtils.getColumns = function(tree, columnList, wrap){
@@ -150,28 +201,100 @@ astUtils.getTables = function(tree, tableList){
     }      
 }
 
-astUtils.addSelectColumn = function(tree, column, table) {
-    let newTree = Object.assign({}, tree)
-    if(column === "*") column = table + "." + column
 
-    //Push the new column into the tree
-    newTree.value.selectItems.value.push({type:"Identifier", value:column, alias:null, hasAs:null})
 
-    //Get current state
-    const currColumns = astUtils.getColumns(newTree, [], true) //Wrap function. We need to diferentiate between functions and regular columns
-    const currTables = astUtils.getTables(newTree, [table]) //Include the table of the column you're adding
 
-    // const colsList = currColumns.filter(c => !c.match(/[a-zA-Z]+\(.+\)/))
-    // const funcList = currColumns.filter(c => c.match(/[a-zA-Z]+\(.+\)/))
+/* ------- GROUP BY FUNCTIONS ------- */
 
-    //Convert to * optimized column list
-    let newColumns = colsToStar(currColumns, currTables)
+// Adds (or removes if func === "") a function from the selected column index  and adds (or removes if func !== "") the column in the the groupBy clause
+astUtils.addGroupByColumn = function(tree, colIdx, func){
+    let newTree = JSON.parse(JSON.stringify(tree)) 
+    let columns = astUtils.getColumns(newTree, [], true)
 
-    //Finally, add all columns back on the new ast tree
-    newTree.value.selectItems.value = newColumns.map(mapColString)
+    // We're adding an aggregate function
+    if(func.length) {
+        const colName = columns[colIdx]
+        columns[colIdx] = func + "(" + colName + ")"
+
+        // Remove the column from the group by array
+        if(newTree.value.groupBy !== null) {
+            newTree.value.groupBy.value = newTree.value.groupBy.value.filter(item => item.value.value !== colName)
+        }
+
+    // We're removing an aggregate function
+    } else {
+        const funcMatch = columns[colIdx].match(/([a-zA-Z]+)\((.+)\)/)
+        columns[colIdx] = funcMatch[2]
+
+        // Add the column from the group by array
+        if(newTree.value.groupBy === null) {
+            newTree.value.groupBy = {rollUp:null, type:"GroupBy", value:[]}
+        }
+        newTree.value.groupBy.value.push({sortOpt:null, type:"GroupByOrderByItem", value:{type: "Identifier", value: funcMatch[2]}})
+    }
+
+    //Finally add the new select columns to the tree
+    newTree.value.selectItems.value = columns.map(mapColString)
 
     return newTree
 }
+
+//Unwraps the column or removes it from the "group by" list (used when a column is removed from the table)
+astUtils.removeGroupByColumn = function(tree, col){
+
+}
+
+// Returns a new tree with all select columns in the groupBy clause, unless they are wrapped
+astUtils.addAllGrouping = function(tree){
+    let newTree = JSON.parse(JSON.stringify(tree))
+    let columns = astUtils.getColumns(newTree, [], true)
+
+    // Add the column from the group by array
+    if(newTree.value.groupBy === null) {
+        newTree.value.groupBy = {rollUp:null, type:"GroupBy", value:[]}
+    }
+
+    let groupedColumns =  newTree.value.groupBy.value.map(c => c.value.value)
+
+    //Loop through each column and add them to the group if they aren't there already
+    columns.forEach(column => {
+        const funcMatch = column.match(/([a-zA-Z]+)\((.+)\)/)
+        //Check if the column already belongs in the group or is an aggregate
+        if(groupedColumns.indexOf(column) === -1 && (!funcMatch || ['avg', 'sum', 'min', 'max', 'count'].indexOf(funcMatch[1].toLowerCase()) === -1)) {
+            //Add it to the group clause
+            newTree.value.groupBy.value.push({sortOpt:null, type:"GroupByOrderByItem", value:{type: "Identifier", value: column}})
+        }
+    })
+
+    return newTree
+}
+
+// Returns a new tree with all select columns "unwrapped" and with groupBy === null
+astUtils.removeAllGrouping = function(tree){
+    let newTree = JSON.parse(JSON.stringify(tree))
+
+    //First, unwrap every column in the list columns
+    let newColumns = astUtils.getColumns(newTree, [], true).map(unwrapAggregateColumn)
+
+    //Then, Add the unwrapped columns to the newTree
+    newTree.value.selectItems.value = newColumns.map(mapColString)
+
+    //Finally, set groupBy to null
+    newTree.value.groupBy = null
+
+    return newTree
+}
+
+
+// Gets the function value for a column or returns "" if column is unwrapped - used to preset the values of the forms
+astUtils.getGroupByColumn = function(tree, col){
+
+}
+
+
+
+
+/* ------- FROM FUNCTIONS ------- */
 
 
 //Recursively add table via natural join to the tree
@@ -214,7 +337,7 @@ astUtils.addNaturalJoinTable = function(tree, table) {
 }
 
 //Recursively removes table from tree
-//implementation built on remove Where
+//implementation built on remove Where -- TO DO Turn this into a general RemoveTable
 astUtils.removeNaturalJoinTable = function(tree, table) {
     let newTree = JSON.parse(JSON.stringify(tree))
 
@@ -242,6 +365,11 @@ astUtils.removeNaturalJoinTable = function(tree, table) {
     
 }
 
+
+
+
+/* ------- WHERE FUNCTIONS ------- */
+
 //adds AND ${column} ${operator} ${val} to end of WHERE clause
 /**
 examples:
@@ -251,7 +379,8 @@ astUtils.where(tree, "arrival_delay", "<", 31)
 **/
 astUtils.addWhereColumn = function(tree, column, operator, val) {
     let newTree = JSON.parse(JSON.stringify(tree))
-    let node = newTree.value.where
+    const clause = useHaving(column) ? 'having': 'where'
+    let node = newTree.value[clause]
     let valType = typeof val
     valType = valType.charAt(0).toUpperCase() + valType.substring(1) //Uppercase first letter
     let nodeType = operator.toUpperCase() === "LIKE" ? "LikePredicate" : "ComparisonBooleanPrimary"
@@ -265,7 +394,7 @@ astUtils.addWhereColumn = function(tree, column, operator, val) {
 
     //Node is null only if where is empty
     if(node == null) {
-        newTree.value.where = newNode
+        newTree.value[clause] = newNode
     //Append to the current where clause
     } else {
         let prev = null
@@ -288,33 +417,13 @@ astUtils.addWhereColumn = function(tree, column, operator, val) {
     return newTree
 }
 
-astUtils.getWhereColumn = function(tree, column) {
-    return recurse(tree.value.where)
-
-    function recurse(node){
-        if(!node) return null
-        const nodeType = node.type
-        switch(nodeType){
-          case 'AndExpression':
-          case 'OrExpression':
-            return recurse(node.left) || recurse(node.right)
-          default:
-            if(node.left && node.left.type === "Identifier" && node.left.value == column || 
-               node.left && node.left.type === "FunctionCall" && funcToString(node.left) == column) {
-                return node
-            } else {
-                return null
-            }
-        }
-    }    
-}
-
 //Remove where clause (or clauses) that match a certain column
 //Returns a new copy of the tree (it does not modify the original)
 astUtils.removeWhereColumn = function(tree, column, operator) {
     const targetType = operator.toUpperCase() === "LIKE" ? "LikePredicate" : "ComparisonBooleanPrimary"
+    const clause = useHaving(column) ? 'having': 'where'
     let newTree = JSON.parse(JSON.stringify(tree))
-    newTree.value.where = recurse(newTree.value.where)
+    newTree.value[clause] = recurse(newTree.value[clause])
     return newTree
 
     function recurse(node){
@@ -339,29 +448,66 @@ astUtils.removeWhereColumn = function(tree, column, operator) {
     }  
 }
 
-//returns a tree that only has newTables elements in it's FROM clause
-function updateTables(tree,newTables) {
-    let newTree = JSON.parse(JSON.stringify(tree))
-    let queryStr = "SELECT * FROM"
-    
-    var i
-    //add all talbes to query string
-    for(i = 0; i < newTables.length; i++) {
-        if(i == 0) {
-            queryStr += " " + newTables[i]
+
+astUtils.getWhereColumn = function(tree, column) {
+    if(tree === null) return null 
+    const clause = useHaving(column) ? 'having': 'where'
+    return recurse(tree.value[clause])
+
+    function recurse(node){
+        if(!node) return null
+        const nodeType = node.type
+        switch(nodeType){
+          case 'AndExpression':
+          case 'OrExpression':
+            return recurse(node.left) || recurse(node.right)
+          default:
+            if(node.left && node.left.type === "Identifier" && node.left.value == column || 
+               node.left && node.left.type === "FunctionCall" && funcToString(node.left) == column) {
+                return node
+            } else {
+                return null
+            }
         }
-        else {
-            queryStr += " NATURAL JOIN " + newTables[i]
-        }
-         
-    }
-    let tempTree = parser.parse(queryStr)
-    //deep copy of tempTree's FROM to newTree's FROM
-     newTree.value.from = JSON.parse(JSON.stringify(tempTree.value.from))
-     return newTree
+    }    
 }
 
-//TO DO - Removes the column from the select clause.
+
+
+/* ------- ORDER BY FUNCTIONS ------- */
+
+
+
+
+/* ------- SELECT FUNCTIONS ------- */
+
+
+astUtils.addSelectColumn = function(tree, column, table) {
+    let newTree = Object.assign({}, tree)
+    if(column === "*") column = table + "." + column
+
+    //Push the new column into the tree
+    newTree.value.selectItems.value.push({type:"Identifier", value:column, alias:null, hasAs:null})
+
+    //Get current state
+    const currColumns = astUtils.getColumns(newTree, [], true) //Wrap function. We need to diferentiate between functions and regular columns
+    const currTables = astUtils.getTables(newTree, [table]) //Include the table of the column you're adding
+
+    // const colsList = currColumns.filter(c => !c.match(/[a-zA-Z]+\(.+\)/))
+    // const funcList = currColumns.filter(c => c.match(/[a-zA-Z]+\(.+\)/))
+
+    //Convert to * optimized column list
+    let newColumns = colsToStar(currColumns, currTables)
+
+    //Finally, add all columns back on the new ast tree
+    newTree.value.selectItems.value = newColumns.map(mapColString)
+
+    //Now add grouping if necessary
+    if(schemaStore.getGrouping()) newTree = astUtils.addAllGrouping(newTree)
+
+    return newTree
+}
+
 //Additionally it removes any table or tables that no longer have any columns on select by calling removeTable
 astUtils.removeSelectColumn = function(tree, columnIdx) {
     let newTree = JSON.parse(JSON.stringify(tree))
@@ -393,6 +539,7 @@ astUtils.removeSelectColumn = function(tree, columnIdx) {
     newTree = astUtils.removeWhereColumn(newTree, colName, getOperatorForColumn(colName))
 
     //TO DO Remove grouping for the column
+    //newTree = astUtils.removeGroupByColumn(newTree, colName)
 
     //TO DO Remove ordering for that colum
 

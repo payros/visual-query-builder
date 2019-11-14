@@ -60,7 +60,7 @@ class ResultsTable extends React.Component {
 			groupingToggle:schemaStore.getGrouping(),
 			orderingToggle:schemaStore.getOrdering()
 		}, () => {
-			this.refs.table.handleResize()
+			if(this.refs.table) this.refs.table.handleResize()
 		})
 	}
 
@@ -94,22 +94,12 @@ class ResultsTable extends React.Component {
     }
 
 	render(){
-		const rows = (this.state.results.length ? this.state.results : []).map(r => this.state.headers.map(h => r[ h.indexOf("(") === -1 ? h : h.substring(0, h.indexOf("("))]))
+		const rows = (this.state.results.length ? this.state.results : []).map(r => this.state.headers.map(h => r[ h.indexOf("(") === -1 ? h : h.substring(0, h.indexOf("(")).toLowerCase()]))
 		const schema = schemaStore.getSchema()
 		const allColumns = Object.keys(schema).reduce((arr, table) => arr.concat(schema[table]), [])
 		const headerCells = this.state.headers.map((col, idx) => <FlexCell className="column-remove-btn" onClick={() => this.handleRemoveColumn(idx)} >{col}</FlexCell>)
-		const filterCells = this.state.headers.map(headerStr => {
-			let headerType = null
-			const funcMatch = headerStr.match(/([a-zA-Z]+)\((.+)\)/)
-			if(funcMatch && ['avg', 'sum', 'min', 'max', 'count'].indexOf(funcMatch[1]) === -1) {
-				headerType = "string"
-			} else if(funcMatch === null) {
-				const headerObjs = allColumns.filter(c => c.name === headerStr)
-				headerType = headerObjs.length ? headerObjs[0].type : "string"
-			}
-			return <FilterCell column={{name:headerStr, type:headerType}}/>
-		})
-		const groupCells = this.state.headers.map(v => <GroupCell column={allColumns[allColumns.map(c => c.name).indexOf(v)]}/>)
+		const filterCells = this.state.headers.map(headerStr => <FilterCell column={{name:headerStr, type:Utils.getTypeFromHeader(headerStr, allColumns)}}/>)
+		const groupCells = this.state.headers.map((headerStr,idx) => <GroupCell idx={idx} column={{name:headerStr, type:Utils.getTypeFromHeader(headerStr, allColumns)}}/>)
 		const orderCells = this.state.headers.map(v => <OrderCell colNum={this.state.headers.length} column={allColumns[allColumns.map(c => c.name).indexOf(v)]}/>)
 
 		return  <Paper>
@@ -118,7 +108,7 @@ class ResultsTable extends React.Component {
 					{!this.state.loading && this.state.headers.length > 0 && this.state.results.length === 0 && <p className="empty-msg">No Results</p>}
 					{!this.state.error && !this.state.loading && this.state.headers.length === 0 && this.state.results.length === 0 && <p className="empty-msg intro-msg">Drop a Column<br></br><span style={{fontWeight:100, fontSize:'80%'}}>or</span><br></br>Type a Query</p>}
 					{this.state.error && <p id="error-msg">{this.state.errorLog}</p>}
-					{!this.state.error &&  <FlexTable ref="table">
+					{!this.state.error && this.state.headers.length > 0 && <FlexTable ref="table">
 												<FlexHead>
 										        	<FlexRow>{headerCells}</FlexRow>
 										        	{this.state.filteringToggle && <FlexRow>{filterCells}</FlexRow>}
@@ -199,7 +189,7 @@ class GroupCell extends React.Component {
         this.setState({ [key]: e.target.value }, () => {
             dispatcher.dispatch({ 
             	type:'GROUP_COLUMN',
-            	column:this.props.column.name,
+            	column:this.props.idx,
             	func:this.state.func
             })        		
         })
