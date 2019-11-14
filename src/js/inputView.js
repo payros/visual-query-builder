@@ -51,7 +51,7 @@ class SqlForm extends React.Component {
     handleChange(event) {
         const query = Utils.getStringFromHTML(event.target.value)
         const HTML = queryStore.getQueryHTML(query)
-        console.log(event.target.value)
+        // console.log(event.target.value, query, HTML)
         this.setState({value:query,  html:HTML}, () => {
             if(this.requestTimeout) clearTimeout(this.requestTimeout);
             this.requestTimeout = setTimeout(() => this.executeQuery(), this.delay);

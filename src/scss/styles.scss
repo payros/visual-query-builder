@@ -319,5 +319,17 @@ sidebar {
 		.select {
     		background-color: $primary-dark;
 		}
+
+		.where {
+    		background-color: darken($accent, 5%);
+		}
+
+		.group-by {
+    		background-color: $primary-light;
+		}
+
+		.order-by {
+    		background-color: $secondary-light;
+		}
 	}
 }

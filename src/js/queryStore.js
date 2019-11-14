@@ -117,14 +117,15 @@ class QueryStore extends EventEmitter {
   }
 
   getQueryHTML(str) {
-    // console.log("string", str)
-    let query = str || this.getQueryString() || ""
+    console.log("string", str)
+    let query = typeof str === "undefined" ?  this.getQueryString() : str
     let html = '<p>' + query + '</p>'
-    html = html.replace(/(select) /i, '<span class="clause select">$1</span>&nbsp;')
-    // html = query.replace(/(having|where)/ig, '<span class="where">$1</span>')
-    // html = query.replace(/(group by)/i, '<span class="group-by">$1</span>')
-    // html = query.replace(/(order by)/i, '<span class="order-by">$1</span>')
-    // console.log("HTML", html)
+    html = html.replace(/(select) /i, '<span class="clause select">SELECT</span>&nbsp;')
+    html = html.replace(/(from) /i, '<span class="clause select">FROM</span>&nbsp;')
+    html = html.replace(/(having|where) /ig, '<span class="clause where">WHERE</span>&nbsp;')
+    html = html.replace(/(group by) /i, '<span class="clause group-by">GROUP BY</span>&nbsp;')
+    html = html.replace(/(order by) /i, '<span class="clause order-by">ORDER BY</span>&nbsp;')
+    console.log("HTML", html)
     return html
   }
 
