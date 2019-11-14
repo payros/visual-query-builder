@@ -242,10 +242,11 @@ astUtils.addGroupByColumn = function(tree, colIdx, func){
 //Unwraps the column or removes it from the "group by" list (used when a column is removed from the table)
 astUtils.removeGroupByColumn = function(tree, col){
     let newTree = JSON.parse(JSON.stringify(tree))
-    let newColumns = astUtils.getColumns(newTree, [], true).map(unwrapAggregateColumn)
+    let newColumns = astUtils.getColumns(newTree, [], true).map(c => c === col ? unwrapAggregateColumn(col) : c)
 
     if(newTree.value.groupBy !== null) {
         newTree.value.groupBy.value = newTree.value.groupBy.value.filter(v => v.value.value !== col)
+        if(newTree.value.groupBy.value.length === 0) newTree.value.groupBy = null
     }
 
     //Finally add the new select columns to the tree
@@ -304,8 +305,6 @@ astUtils.getGroupByColumn = function(col){
     const funcMatch = col.match(/([a-zA-Z]+)\((.+)\)/)
     return funcMatch && ['avg', 'sum', 'min', 'max', 'count'].indexOf(funcMatch[1].toLowerCase()) > -1 ? funcMatch[1].toUpperCase() : ""
 }
-
-
 
 
 /* ------- FROM FUNCTIONS ------- */
