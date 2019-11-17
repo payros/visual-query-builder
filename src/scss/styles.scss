@@ -112,7 +112,7 @@ sidebar {
 		padding-left:20px;
 
 		> li {
-			background-color: $primary-dark;
+				background-color: $primary-dark;
 		    color: #fff;
 		    display: inline-block;
 		    padding: 4px 12px;
@@ -120,6 +120,10 @@ sidebar {
 		    font-size: 0.8rem;
 		    margin: 4px;
 		    box-shadow: 1px 1px 1px rgba(0,0,0,0.15);
+
+				&.foreign-key {
+					background-color: darken($primary-dark, 10%);
+				}
 		}
 	}
 }

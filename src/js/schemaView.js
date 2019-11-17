@@ -80,10 +80,13 @@ class SchemaView extends React.Component {
 
 class ColumnList extends React.Component {
 	render(){
+		const schema = schemaStore.getSchema()
+		const duplicateColumns = Object.keys(schema).reduce((arr, table) => arr.concat(schema[table].map(c => c.name)), []).filter((a, i, arr) => arr.indexOf(a) === i && arr.lastIndexOf(a) !== i)
+
 		return <React.Fragment>
 					<p className="table-title">{this.props.title}</p>
 					<ul className="column-list">
-						{ this.props.columns.map(c => <ColumnItem table={this.props.title} column={c.name}/>)}
+						{ this.props.columns.map(c => <ColumnItem className={duplicateColumns.indexOf(c.name) > -1 ? "foreign-key" : ""} table={this.props.title} column={c.name}/>)}
 						<ColumnItem table={this.props.title} column="*"/>
 					</ul>
 			   </React.Fragment>
@@ -101,7 +104,7 @@ class ColumnItem extends React.Component {
 	}
 
 	render(){
-		return <li draggable="true" onDragStart={(ev) => this.handleDragStart(ev)} onDragEnd={this.handleDragEnd}>{this.props.column}</li>
+		return <li draggable="true" className={this.props.className} onDragStart={(ev) => this.handleDragStart(ev)} onDragEnd={this.handleDragEnd}>{this.props.column}</li>
 	}
 }
 
