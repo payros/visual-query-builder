@@ -419,6 +419,35 @@ astUtils.removeNaturalJoinTable = function(tree, table) {
 }
 
 
+//Recursively removes table from tree
+//implementation built on remove Where -- TO DO Turn this into a general RemoveTable
+astUtils.removeJoinTable = function(tree, table) {
+    let newTree = JSON.parse(JSON.stringify(tree))
+
+    newTree.value.from.value[0].value = recurse(newTree.value.from.value[0].value)
+    return newTree
+
+    function recurse(node){
+        if(!node) return node
+        const nodeType = node.type.substring(node.type.length-9) === "JoinTable" ? "JoinTable" : node.type
+
+        switch(nodeType){
+            case 'JoinTable':
+                if( node.left.type === "TableFactor" && node.left.value.value === table) {
+                    node = node.right
+                } else if(node.right.type === "TableFactor" && node.right.value.value === table){
+                    node = node.left
+                } else {
+                    node.left = recurse(node.left)
+                    node.right = recurse(node.right)
+                }
+                break
+        }
+        return node
+    }
+
+}
+
 
 
 /* ------- WHERE FUNCTIONS ------- */
@@ -583,7 +612,7 @@ astUtils.removeSelectColumn = function(tree, columnIdx) {
     const currTables = astUtils.getTables(newTree, [])
     currTables.forEach(table => {
         if(newTables.indexOf(table) === -1) {
-            newTree = astUtils.removeNaturalJoinTable(newTree, table)
+            newTree = astUtils.removeJoinTable(newTree, table)
             //remove all tables from tree
         }
     })
