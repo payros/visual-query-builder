@@ -130,7 +130,7 @@ class ResultsTable extends React.Component {
 class FilterCell extends React.Component {
 	constructor(props) {
     	super(props)
-    	const filter = queryStore.getWhereForColumn(this.props.column.name)
+    	const filter = queryStore.getWhereForColumn(this.props.column.name, this.props.column.type)
     	this.state = {operator:filter.operator.length ? filter.operator : this.props.column.type === "integer" ? "=" : "", value:filter.value }
     	this.timeout = null
     	this.delay = 1000
@@ -138,7 +138,7 @@ class FilterCell extends React.Component {
 
   	componentWillMount(){
 		resultsStore.on("results-fetched", () => {
-			const filter = queryStore.getWhereForColumn(this.props.column.name)
+			const filter = queryStore.getWhereForColumn(this.props.column.name, this.props.column.type)
 			this.setState({operator:filter.operator.length ? filter.operator : this.props.column.type === "integer" ? "=" : "", value:filter.value })
 		})
 	}
@@ -185,7 +185,6 @@ class GroupCell extends React.Component {
 
   	componentWillMount(){
 		resultsStore.on("results-fetched", () => {
-			console.log(this.props.column.name,queryStore.getGroupByColumn(this.props.column.name))
 			this.setState({func:queryStore.getGroupByColumn(this.props.column.name)})
 		})
 	}

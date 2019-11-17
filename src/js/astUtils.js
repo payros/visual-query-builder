@@ -477,9 +477,10 @@ astUtils.removeWhereColumn = function(tree, column, operator) {
 }
 
 
-astUtils.getWhereColumn = function(tree, column) {
+astUtils.getWhereColumn = function(tree, column, colType) {
     if(tree === null) return null
     const clause = useHaving(column) ? 'having': 'where'
+    const targetType = colType !== "integer" ? "LikePredicate" : "ComparisonBooleanPrimary"
     return recurse(tree.value[clause])
 
     function recurse(node){
@@ -490,8 +491,9 @@ astUtils.getWhereColumn = function(tree, column) {
           case 'OrExpression':
             return recurse(node.left) || recurse(node.right)
           default:
-            if(node.left && node.left.type === "Identifier" && node.left.value == column ||
-               node.left && node.left.type === "FunctionCall" && funcToString(node.left) == column) {
+            if(nodeType === targetType &&
+              (node.left && node.left.type === "Identifier" && node.left.value == column ||
+               node.left && node.left.type === "FunctionCall" && funcToString(node.left) == column)) {
                 return node
             } else {
                 return null

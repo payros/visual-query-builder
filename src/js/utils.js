@@ -20,16 +20,12 @@ export default  {
     },
     getTypeFromHeader:(headerStr, allColumns) => {
         const funcMatch = headerStr.match(/([a-zA-Z]+)\((.+)\)/)
-        let headerObjs = []
-        if(funcMatch && ['avg', 'sum', 'min', 'max', 'count'].indexOf(funcMatch[1].toLowerCase()) > -1) {
-            headerObjs = allColumns.filter(c => c.name === funcMatch[2])
-        } else if(funcMatch === null) {
-            headerObjs = allColumns.filter(c => c.name === headerStr)
-        }
-        return headerObjs.length ? headerObjs[0].type : "string"
+        //The column is wrapped in an aggregator function which turn it into an integer
+        if(funcMatch && ['avg', 'sum', 'min', 'max', 'count'].indexOf(funcMatch[1].toLowerCase()) > -1) return "integer"
+        let headerObjs = allColumns.filter(c => c.name === headerStr)
+        return headerObjs.length && headerObjs[0].type === "integer" ? "integer" : "string"
     },
     getStringFromHTML:(html) => {
-        // if(html = "<p>Type SQL Query</p>") return "Type SQL Query"
         return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&gt;/g, '>').replace(/&lt;/g, '<')
     },
     // getCaretPosition: return [start, end] as offsets to elem.textContent that

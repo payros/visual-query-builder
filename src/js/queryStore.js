@@ -76,7 +76,7 @@ class QueryStore extends EventEmitter {
 
   groupColumn(colIdx, func){
     this.query = ast.addGroupByColumn(this.query, colIdx, func)
-    this.emit("query-updated");
+    setTimeout(() => { this.emit("query-updated") })  // Avoids dispatcher invariant issues
   }
 
   getGroupByColumn(column) {
@@ -87,11 +87,11 @@ class QueryStore extends EventEmitter {
     //TO DO add ordering to the ast tree
   }
 
-  getWhereForColumn(column) {
-    const whereNode = ast.getWhereColumn(this.query, column)
+  getWhereForColumn(column, columnType) {
+    const whereNode = ast.getWhereColumn(this.query, column, columnType)
     let operator = ""
     let value = ""
-
+    console.log("whereNode", whereNode)
     if(whereNode !== null) {
       operator = whereNode.type == "LikePredicate" ? "like" : whereNode.operator
       value = whereNode.type == "LikePredicate" ? whereNode.right.value.match(/^'%?([^%]*)%?'$/)[1] : whereNode.right.value
@@ -131,7 +131,6 @@ class QueryStore extends EventEmitter {
 
     // I should get an automatic A just for coming up with this RegEx...
     const queryMatch = escapedQuery.match(/(select)(.*?)(from)(?:(.*?)(where|group(?:&nbsp;)+by|order(?:&nbsp;)+by)|(.*))(?:(.*?)(group(?:&nbsp;)+by|having|order(?:&nbsp;)+by)|(.*))(?:(.*?)(having|order(?:&nbsp;)+by)|(.*))(?:(.*?)(order(?:&nbsp;)+by)|(.*))(.*)/i);
-    console.log("queryMatch", queryMatch);
 
     if(queryMatch === null) return '<p>' + escapedQuery + '</p>' // No matches... this is not a valid sql query, so just return it
 
