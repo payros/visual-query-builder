@@ -14,7 +14,7 @@ function isTableRedundant(table, tableIndex, tables){
     //If table has a single column, check to see if it is on other tables
     const columnToCheck = table.columns[0]
     const otherTablesWithCol = tables.filter(t => t.name !== table.name && t.columns.indexOf(columnToCheck) > -1)
-    console.log("otherTables=",otherTablesWithCol)
+    // console.log("otherTables=",otherTablesWithCol)
     //if otherTablesWithCol is empty then then we need the current table so we must return true in order for filter to keep it
     return otherTablesWithCol.length == 0
 }
@@ -116,7 +116,7 @@ function getReducedTables(tables) {
                 res.splice(i,1)
             }
         }
-          
+
     }
     return res
 }

@@ -61,7 +61,7 @@ class QueryStore extends EventEmitter {
 
   removeColumn(colIdx) {
     this.query = ast.removeSelectColumn(this.query, colIdx)
-    this.emit("query-updated");
+    setTimeout(() => { this.emit("query-updated") })  // Avoids dispatcher invariant issues
   }
 
   filterColumn(column, operator, value) {
