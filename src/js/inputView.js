@@ -1,5 +1,4 @@
 import React from 'react'
-import ReactDOM from 'react-dom'
 import ContentEditable from 'react-contenteditable'
 import queryStore from './queryStore'
 import resultsStore from './resultsStore'
@@ -18,15 +17,15 @@ class SqlForm extends React.Component {
     constructor(props) {
         super(props);
         this.requestTimeout = null;
-        this.state = { html:queryStore.getQueryHTML() };
         this.query = queryStore.getQueryString()
+        this.state = { html:queryStore.getQueryHTML(), this.query.length ? ">" : "> Type SQL Query"};
         this.delay = 1000;
     }
 
     componentWillMount(){
        queryStore.on("query-updated", () => {
-            this.setState({html:queryStore.getQueryHTML()})
             this.query = queryStore.getQueryString()
+            this.setState({html:queryStore.getQueryHTML(), placeholder:this.query.length ? ">" : "> Type SQL Query"})
             this.executeQuery()
 
         })
@@ -71,6 +70,14 @@ class SqlForm extends React.Component {
 
     }
 
+    handleFocus(){
+      this.setState({ placeholder:">" })
+    }
+
+    handleBlur(){
+      this.setState({ placeholder:this.query.length ? ">" : "> Type SQL Query" })
+    }
+
     executeQuery(){
         dispatcher.dispatch({
            type:'FETCH_RESULTS',
@@ -79,7 +86,10 @@ class SqlForm extends React.Component {
     }
 
     render(){
-        return  <ContentEditable ref="inputbox" className="input-form" html={this.state.html} onChange={(e) => this.handleChange(e)}/>
+        return  <React.Fragment>
+                  <p className="placeholder">{this.state.placeholder}</p>
+                  <ContentEditable ref="inputbox" className="input-form" html={this.state.html} onFocus={ () => this.handleFocus() }  onBlur={ () => this.handleBlur() } onChange={(e) => this.handleChange(e)}/>
+                </React.Fragment>
     }
 }
 
