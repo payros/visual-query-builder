@@ -113,8 +113,8 @@ class ResultsTable extends React.Component {
 					{this.state.dragging && <div className="drop-curtain" onDragOver={this.handleDragOver} onDrop={(ev) => this.handleDrop(ev)}><p>Drop to Add Column to Query</p></div>}
 					{this.state.loading && <Utils.AjaxLoader/>}
 					{showMsg && <p id="msg" className={msgClass}>{msgContent}</p>}
-          {!showMsg && this.state.results.length === 0 && <p className="empty-msg">No Results</p>}
-					{!showMsg && <FlexTable ref="table">
+          {!showMsg && !this.state.loading && this.state.results.length === 0 && <p className="empty-msg">No Results</p>}
+					{!showMsg && !this.state.loading && <FlexTable ref="table">
   												<FlexHead>
   										        	<FlexRow>{headerCells}</FlexRow>
   										        	{this.state.filteringToggle && <FlexRow>{filterCells}</FlexRow>}
