@@ -76,7 +76,6 @@ class QueryStore extends EventEmitter {
 
   groupColumn(colIdx, func){
     this.query = ast.addGroupByColumn(this.query, colIdx, func)
-    console.log(this.query)
     this.emit("query-updated");
   }
 
@@ -107,6 +106,7 @@ class QueryStore extends EventEmitter {
       console.log(this.query)
       this.emit("query-parsed");
     } catch(error){
+      this.emit("parse-error");
       console.error("PARSE ERROR");
     }
   }
@@ -133,7 +133,7 @@ class QueryStore extends EventEmitter {
     const queryMatch = escapedQuery.match(/(select)(.*?)(from)(?:(.*?)(where|group(?:&nbsp;)+by|order(?:&nbsp;)+by)|(.*))(?:(.*?)(group(?:&nbsp;)+by|having|order(?:&nbsp;)+by)|(.*))(?:(.*?)(having|order(?:&nbsp;)+by)|(.*))(?:(.*?)(order(?:&nbsp;)+by)|(.*))(.*)/i);
     console.log("queryMatch", queryMatch);
 
-    if(queryMatch === null) return escapedQuery // No matches... this is not a valid sql query, so just return it
+    if(queryMatch === null) return '<p>' + escapedQuery + '</p>' // No matches... this is not a valid sql query, so just return it
 
     //First let's color the keywords
     selectKeyword =  queryMatch[1] ? '<span class="clause select">SELECT</span>' : '';
@@ -167,6 +167,7 @@ class QueryStore extends EventEmitter {
         })
 
     } catch(error) {
+      this.emit("parse-error");
       console.error("PARSE ERROR", error)
     }
 
@@ -178,7 +179,7 @@ class QueryStore extends EventEmitter {
       optional.clause = optional.clause.replace(funcRegex, ($0, $1, $2, $3) => '<span class="function group-by">' + $1.toUpperCase() + $2 + '</span>' + $3);
     })
     // console.log("optClauses", optionalClauses, optionalClauses.reduce((str, opt) => str + opt.keyword + opt.clause,''))
-    let html = selectKeyword + selectClause + fromKeyword + fromClause + optionalClauses.reduce((str, opt) => str + opt.keyword + opt.clause,'')
+    let html = '<p>' + selectKeyword + selectClause + fromKeyword + fromClause + optionalClauses.reduce((str, opt) => str + opt.keyword + opt.clause,'') + '</p>'
     // console.log("OUTPUT HTML:", html)
     return html
   }

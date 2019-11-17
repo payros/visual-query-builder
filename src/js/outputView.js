@@ -20,11 +20,11 @@ class ResultsTable extends React.Component {
 	constructor() {
     	super()
     	this.state = {
-    		headers:[], 
-    		results:[], 
-    		loading:false, 
-    		error:false, 
-    		errorLog:"", 
+    		headers:[],
+    		results:[],
+    	  loading:false,
+    		error:false,
+    		errorLog:"",
     		dragging:false,
     		filteringToggle:schemaStore.getFiltering(),
 			groupingToggle:schemaStore.getGrouping(),
@@ -34,20 +34,23 @@ class ResultsTable extends React.Component {
 
 	componentWillMount(){
 		//Allows this component to listen to events
-        dispatcher.register(this.handleEvents.bind(this))
+    dispatcher.register(this.handleEvents.bind(this))
 
 		resultsStore.on("results-loading", () => {
-			this.setState({error:false, loading:true, results:[]})
+			this.setState({error:false, loading:true, errorLog:null, errorClass:null, results:[]})
 		})
 		resultsStore.on("results-fetched", () => {
-			this.setState({error:false, loading:false, results:resultsStore.getResults()})
+			this.setState({error:false, loading:false, errorLog:null, errorClass:null, results:resultsStore.getResults()})
 		})
 		resultsStore.on("results-error", () => {
-			this.setState({error:true, loading:false, errorLog:resultsStore.getErrorLog()})
+			this.setState({error:true, loading:false, errorLog:resultsStore.getErrorLog(), errorClass:"error"})
 		})
 		queryStore.on("query-parsed", () => {
-			this.setState({ headers:queryStore.getColumns() })
+			this.setState({error:false, loading:false, errorLog:null, errorClass:null, headers:queryStore.getColumns() })
 		})
+    queryStore.on("parse-error", () => {
+      this.setState({error:true, loading:false, errorLog:"Incomplete or unparsable query", errorClass:"warning"})
+    })
 
 		schemaStore.on("filtering-toggled", () => this.handleToggle())
 		schemaStore.on("grouping-toggled", () => this.handleToggle())
@@ -102,28 +105,31 @@ class ResultsTable extends React.Component {
 		const groupCells = this.state.headers.map((headerStr,idx) => <GroupCell idx={idx} column={{name:headerStr, type:Utils.getTypeFromHeader(headerStr, allColumns)}}/>)
 		const orderCells = this.state.headers.map(v => <OrderCell colNum={this.state.headers.length} column={allColumns[allColumns.map(c => c.name).indexOf(v)]}/>)
 
-		return  <Paper>
+    const showMsg = this.state.error || !this.state.loading && this.state.headers.length === 0 && this.state.results.length === 0;
+    const msgContent = this.state.errorLog || "Drop a column or type a query"
+    const msgClass = this.state.errorClass || "info"
+
+    return  <Paper>
 					{this.state.dragging && <div className="drop-curtain" onDragOver={this.handleDragOver} onDrop={(ev) => this.handleDrop(ev)}><p>Drop to Add Column to Query</p></div>}
 					{this.state.loading && <Utils.AjaxLoader/>}
-					{!this.state.loading && this.state.headers.length > 0 && this.state.results.length === 0 && <p className="empty-msg">No Results</p>}
-					{!this.state.error && !this.state.loading && this.state.headers.length === 0 && this.state.results.length === 0 && <p className="empty-msg intro-msg">Drop a Column<br></br><span style={{fontWeight:100, fontSize:'80%'}}>or</span><br></br>Type a Query</p>}
-					{this.state.error && <p id="error-msg">{this.state.errorLog}</p>}
-					{!this.state.error && this.state.headers.length > 0 && <FlexTable ref="table">
-												<FlexHead>
-										        	<FlexRow>{headerCells}</FlexRow>
-										        	{this.state.filteringToggle && <FlexRow>{filterCells}</FlexRow>}
-										        	{this.state.groupingToggle && <FlexRow>{groupCells}</FlexRow>}
-										        	{this.state.orderingToggle && <FlexRow>{orderCells}</FlexRow>}
-												</FlexHead>
-										        <FlexBody rows={rows}/>
-									      	</FlexTable>}
+					{showMsg && <p id="msg" className={msgClass}>{msgContent}</p>}
+          {!showMsg && this.state.results.length === 0 && <p className="empty-msg">No Results</p>}
+					{!showMsg && <FlexTable ref="table">
+  												<FlexHead>
+  										        	<FlexRow>{headerCells}</FlexRow>
+  										        	{this.state.filteringToggle && <FlexRow>{filterCells}</FlexRow>}
+  										        	{this.state.groupingToggle && <FlexRow>{groupCells}</FlexRow>}
+  										        	{this.state.orderingToggle && <FlexRow>{orderCells}</FlexRow>}
+  												</FlexHead>
+  										        <FlexBody rows={rows}/>
+									      </FlexTable>}
 				</Paper>
 	}
 }
 
 class FilterCell extends React.Component {
 	constructor(props) {
-    	super(props)   	
+    	super(props)
     	const filter = queryStore.getWhereForColumn(this.props.column.name)
     	this.state = {operator:filter.operator.length ? filter.operator : this.props.column.type === "integer" ? "=" : "", value:filter.value }
     	this.timeout = null
@@ -144,12 +150,12 @@ class FilterCell extends React.Component {
         	this.timeout = setTimeout(() => {
 
         		if(this.state.value.length || key !== "operator"){
-		            dispatcher.dispatch({ 
+		            dispatcher.dispatch({
 		            	type:'FILTER_COLUMN',
 		            	column:this.props.column.name,
 		            	value:this.state.value,
 		            	operator:this.state.operator.length ? this.state.operator : "like"
-		            })        		
+		            })
 	        	}
         	}, this.delay)
         })
@@ -157,7 +163,7 @@ class FilterCell extends React.Component {
 
 	render(){
 		return <FlexCell className="filter" {...this.props} >
-					{this.props.column.type === "integer" && 
+					{this.props.column.type === "integer" &&
 					<NativeSelect value={this.state.operator} onChange={(ev) => this.handleChange(ev)} inputProps={{ name: 'operator' }}>
 						<option value="<" >less than</option>
 						<option value="<=" >less or equal</option>
@@ -173,7 +179,7 @@ class FilterCell extends React.Component {
 
 class GroupCell extends React.Component {
 	constructor(props) {
-    	super(props)   	
+    	super(props)
     	this.state = {func:queryStore.getGroupByColumn(this.props.column.name)}
   	}
 
@@ -187,11 +193,11 @@ class GroupCell extends React.Component {
     handleChange(e){
         const key = e.target.name
         this.setState({ [key]: e.target.value }, () => {
-            dispatcher.dispatch({ 
+            dispatcher.dispatch({
             	type:'GROUP_COLUMN',
             	column:this.props.idx,
             	func:this.state.func
-            })        		
+            })
         })
     }
 
@@ -200,7 +206,7 @@ class GroupCell extends React.Component {
 					<NativeSelect value={this.state.func} onChange={(ev) => this.handleChange(ev)} inputProps={{ name: 'func' }}>
 						<option value="" >unique</option>
 						<option value="COUNT" >count</option>
-						{this.props.column.type === "integer" &&  
+						{this.props.column.type === "integer" &&
 							<React.Fragment>
 								<option value="SUM" >sum</option>
 								<option value="AVG" >average</option>
@@ -214,7 +220,7 @@ class GroupCell extends React.Component {
 
 class OrderCell extends React.Component {
 	constructor(props) {
-    	super(props)   	
+    	super(props)
     	this.state = {order:"", sort:"asc"}
   	}
 
@@ -228,12 +234,12 @@ class OrderCell extends React.Component {
     handleChange(e){
         const key = e.target.name
         this.setState({ [key]: e.target.value }, () => {
-            dispatcher.dispatch({ 
+            dispatcher.dispatch({
             	type:'ORDER_COLUMN',
             	column:this.props.column.name,
             	order:this.state.order,
             	sort:this.state.sort
-            })        		
+            })
         })
     }
 
