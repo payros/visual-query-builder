@@ -165,7 +165,7 @@ astUtils.getColumns = function(tree, columnList, wrap){
         //First check if column is *
         if(curr.value === "*"){
             //Add all the columns form currTables to the array
-            arr = currTables.reduce((arr, tbl) => arr.concat(schema[tbl].map(c => c.name)), arr)
+            arr = currTables.reduce((arr, tbl) => schema[tbl] ? arr.concat(schema[tbl].map(c => c.name)) : arr, arr)
         //Now check if it matches "table.*"
         } else if (curr.value.match(/[^\.]+\.\*$/) !== null){
             //Add the colmns from that table to the array

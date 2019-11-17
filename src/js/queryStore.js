@@ -17,7 +17,7 @@ class QueryStore extends EventEmitter {
       //If filtering was unchecked, remove the where clause
       if(!isFilteringChecked && this.query !== null) {
         this.query.value.where = null;
-        this.emit("query-updated");
+        setTimeout(() => { this.emit("query-updated") })  // Avoids dispatcher invariant issues
       }
     })
 
@@ -29,7 +29,7 @@ class QueryStore extends EventEmitter {
         } else {
           this.query = ast.removeAllGrouping(this.query)
         }
-        this.emit("query-updated");
+        setTimeout(() => { this.emit("query-updated") })  // Avoids dispatcher invariant issues
       }
 
     })
@@ -56,7 +56,7 @@ class QueryStore extends EventEmitter {
       }
     }
 
-    this.emit("query-updated");
+    setTimeout(() => { this.emit("query-updated") })  // Avoids dispatcher invariant issues
   }
 
   removeColumn(colIdx) {
@@ -133,7 +133,7 @@ class QueryStore extends EventEmitter {
     const queryMatch = escapedQuery.match(/(select)(.*?)(from)(?:(.*?)(where|group(?:&nbsp;)+by|order(?:&nbsp;)+by)|(.*))(?:(.*?)(group(?:&nbsp;)+by|having|order(?:&nbsp;)+by)|(.*))(?:(.*?)(having|order(?:&nbsp;)+by)|(.*))(?:(.*?)(order(?:&nbsp;)+by)|(.*))(.*)/i);
     console.log("queryMatch", queryMatch);
 
-    if(queryMatch === null) return '<p>' + escapedQuery + '</p>' // No matches... this is not a valid sql query, so just return it
+    if(queryMatch === null) return escapedQuery // No matches... this is not a valid sql query, so just return it
 
     //First let's color the keywords
     selectKeyword =  queryMatch[1] ? '<span class="clause select">SELECT</span>' : '';
@@ -178,7 +178,7 @@ class QueryStore extends EventEmitter {
       optional.clause = optional.clause.replace(funcRegex, ($0, $1, $2, $3) => '<span class="function group-by">' + $1.toUpperCase() + $2 + '</span>' + $3);
     })
     // console.log("optClauses", optionalClauses, optionalClauses.reduce((str, opt) => str + opt.keyword + opt.clause,''))
-    let html = '<p>' + selectKeyword + selectClause + fromKeyword + fromClause + optionalClauses.reduce((str, opt) => str + opt.keyword + opt.clause,'') + '</p>'
+    let html = selectKeyword + selectClause + fromKeyword + fromClause + optionalClauses.reduce((str, opt) => str + opt.keyword + opt.clause,'')
     // console.log("OUTPUT HTML:", html)
     return html
   }
