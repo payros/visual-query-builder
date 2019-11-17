@@ -78,7 +78,7 @@ sidebar {
 		}
 
 		.blue .MuiSwitch-colorSecondary.Mui-checked {
-			color:lighten($primary-light, 15%);
+			color:lighten($primary-light, 30%);
 
 			&:hover {
 				background-color:rgba($primary-light, 0.1);
@@ -193,6 +193,7 @@ sidebar {
 			    font-size: 0.8rem;
 			    flex-grow: 1;
 			    overflow:hidden;
+					color:#444;
 
 			    &:focus {
 			    	background-color: rgba(0, 0, 0, 0.05);
@@ -208,6 +209,7 @@ sidebar {
 				.MuiInputBase-inputSelect {
 					padding: 0.6rem 0.5rem;
 					padding-right: 24px;
+					color:#444;
 				}
 
 				.MuiNativeSelect-select:focus {
@@ -355,7 +357,7 @@ sidebar {
 				}
 
 				&.where, &.having {
-						background-color: darken($accent, 15%);
+						background-color: darken($accent, 10%);
 				}
 
 				&.group-by {
@@ -379,7 +381,7 @@ sidebar {
 				}
 
 				&.where, &.having {
-						color: $accent;
+						color: lighten($accent, 15%);
 				}
 
 				&.group-by {
