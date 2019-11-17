@@ -107,11 +107,9 @@ function getReducedTables(tables) {
             continue;
         }
         var j
-        console.log("check if table",i," ",res[i],"needs to be removed")
         for(j = 0; j < res.length; j++) {
             //if table j contains the only column in table i then table i is redundant
-            console.log("res[j].columns=",j," ",res[j].columns)
-            if( i != j && (res[j].columns.indexOf(res[i].columns[0]) != -1) ) {
+            if( i != j && (res[j].columns.map(t => t.name).indexOf(res[i].columns[0].name) != -1) ) {
                 console.log("removing",res[i])
                 res.splice(i,1)
             }
