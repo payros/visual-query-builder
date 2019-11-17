@@ -18,7 +18,7 @@ class SqlForm extends React.Component {
         super(props);
         this.requestTimeout = null;
         this.query = queryStore.getQueryString()
-        this.state = { html:queryStore.getQueryHTML(), this.query.length ? ">" : "> Type SQL Query"};
+        this.state = { html:queryStore.getQueryHTML(), placeholder:this.query.length ? ">" : "> Type SQL Query"};
         this.delay = 1000;
     }
 
