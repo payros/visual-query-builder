@@ -9,7 +9,7 @@ export default  {
         return -1
     },
     isEqualJSON:(a,b) => {
-      return JSON.stringify(a) === JSON.stringify(b)  
+      return JSON.stringify(a) === JSON.stringify(b)
     },
     getTypeFromHeader:(headerStr, allColumns) => {
         const funcMatch = headerStr.match(/([a-zA-Z]+)\((.+)\)/)
@@ -23,7 +23,7 @@ export default  {
     },
     getStringFromHTML:(html) => {
         // if(html = "<p>Type SQL Query</p>") return "Type SQL Query"
-        return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ')
+        return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&gt;/g, '>').replace(/&lt;/g, '<')
     },
     //Filter an array by a value matching certain properties
     filterByProps:(arr, val, props) => arr.filter(o => props.reduce((bool,prop) => bool = bool || (o[prop] && o[prop].toLowerCase().indexOf(val.toLowerCase()) > -1), false)),
