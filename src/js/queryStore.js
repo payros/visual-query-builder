@@ -97,14 +97,18 @@ class QueryStore extends EventEmitter {
       operator = whereNode.type == "LikePredicate" ? "like" : whereNode.operator
       value = whereNode.type == "LikePredicate" ? whereNode.right.value.match(/^'%?([^%]*)%?'$/)[1] : whereNode.right.value
     }
-    
+
     return { operator, value }
   }
 
-  parseQuery(queryStr){ //Assumes the query is valid or empty
-    this.query = queryStr.length ? parser.parse(queryStr) : null
-    console.log(this.query)
-    this.emit("query-parsed");
+  parseQuery(queryStr){
+    try {
+      this.query = queryStr.length ? parser.parse(queryStr) : null
+      console.log(this.query)
+      this.emit("query-parsed");
+    } catch(error){
+      console.error("PARSE ERROR");
+    }
   }
 
   getColumns(){
@@ -117,15 +121,65 @@ class QueryStore extends EventEmitter {
   }
 
   getQueryHTML(str) {
-    console.log("string", str)
+    let selectKeyword, selectClause, fromKeyword, fromClause
+    let optionalClauses = [{},{},{},{}]
     let query = typeof str === "undefined" ?  this.getQueryString() : str
-    let html = '<p>' + query + '</p>'
-    html = html.replace(/(select) /i, '<span class="clause select">SELECT</span>&nbsp;')
-    html = html.replace(/(from) /i, '<span class="clause select">FROM</span>&nbsp;')
-    html = html.replace(/(having|where) /ig, '<span class="clause where">WHERE</span>&nbsp;')
-    html = html.replace(/(group by) /i, '<span class="clause group-by">GROUP BY</span>&nbsp;')
-    html = html.replace(/(order by) /i, '<span class="clause order-by">ORDER BY</span>&nbsp;')
-    console.log("HTML", html)
+    // console.log("INPUT STRING:", query)
+
+    //Escape any spaces
+    let escapedQuery = query.replace(/\s/g, '&nbsp;')
+
+    // I should get an automatic A just for coming up with this RegEx...
+    const queryMatch = escapedQuery.match(/(select)(.*?)(from)(?:(.*?)(where|group(?:&nbsp;)+by|order(?:&nbsp;)+by)|(.*))(?:(.*?)(group(?:&nbsp;)+by|having|order(?:&nbsp;)+by)|(.*))(?:(.*?)(having|order(?:&nbsp;)+by)|(.*))(?:(.*?)(order(?:&nbsp;)+by)|(.*))(.*)/i);
+    console.log("queryMatch", queryMatch);
+
+    if(queryMatch === null) return '<p>' + escapedQuery + '</p>' // No matches... this is not a valid sql query, so just return it
+
+    //First let's color the keywords
+    selectKeyword =  queryMatch[1] ? '<span class="clause select">SELECT</span>' : '';
+    selectClause = queryMatch[2] ? queryMatch[2] : '';
+    fromKeyword =  queryMatch[3] ? '<span class="clause select">FROM</span>' : '';
+    fromClause =  queryMatch[6] ? queryMatch[6] : queryMatch[4] ? queryMatch[4] : '';
+
+    optionalClauses.forEach((optional, i) => {
+      let offset = i*3
+      optional.class = queryMatch[5+offset] ? queryMatch[5+offset].toLowerCase().replace(/(&nbsp;)+/g, '-') : '';
+      optional.keyword =  queryMatch[5+offset] ? '<span class="clause ' + optional.class + '">' + queryMatch[5+offset].replace(/(&nbsp;)+/g, ' ').toUpperCase() + '</span>' : '';
+      optional.clause =  queryMatch[9+offset] ? queryMatch[9+offset] : queryMatch[7+offset] ? queryMatch[7+offset] : '';
+    })
+
+    // Now let's try to color the columns
+    try {
+        const queryTree = parser.parse(query)
+        //First parse the query and get the raw columns
+        let currColumns = ast.getRawColumns(queryTree, [])
+        // Now join regular columns with expanded columns
+        currColumns = ast.getColumns(queryTree, currColumns, true)
+        //Finally, turn it into a string that can be used in the regex
+        currColumns = currColumns.reduce((str, c) => str + "|" + c,  "").substring(1).replace('*', '\\*')
+
+        console.log('currColumns', currColumns)
+
+        let colRegex = new RegExp('(' + currColumns + ')', 'gi')
+        selectClause = selectClause.replace(colRegex, '<span class="column select">$1</span>');
+        optionalClauses.forEach((optional, i) => {
+          optional.clause = optional.clause.replace(colRegex, '<span class="column ' + optional.class + '">$1</span>');
+        })
+
+    } catch(error) {
+      console.error("PARSE ERROR", error)
+    }
+
+    //Finally, let's color the aggregate functions
+    let funcRegex = /(count|min|max|avg|sum)(\(.*?\))(&nbsp;|,)/gi
+
+    selectClause = selectClause.replace(funcRegex, ($0, $1, $2, $3) => '<span class="function group-by">' + $1.toUpperCase() + $2 + '</span>' + $3);
+    optionalClauses.forEach((optional, i) => {
+      optional.clause = optional.clause.replace(funcRegex, ($0, $1, $2, $3) => '<span class="function group-by">' + $1.toUpperCase() + $2 + '</span>' + $3);
+    })
+    // console.log("optClauses", optionalClauses, optionalClauses.reduce((str, opt) => str + opt.keyword + opt.clause,''))
+    let html = '<p>' + selectKeyword + selectClause + fromKeyword + fromClause + optionalClauses.reduce((str, opt) => str + opt.keyword + opt.clause,'') + '</p>'
+    // console.log("OUTPUT HTML:", html)
     return html
   }
 
