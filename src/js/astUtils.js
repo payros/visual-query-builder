@@ -14,7 +14,9 @@ function isTableRedundant(table, tableIndex, tables){
     //If table has a single column, check to see if it is on other tables
     const columnToCheck = table.columns[0]
     const otherTablesWithCol = tables.filter(t => t.name !== table.name && t.columns.indexOf(columnToCheck) > -1)
-    return otherTablesWithCol.length > 0
+    console.log("otherTables=",otherTablesWithCol)
+    //if otherTablesWithCol is empty then then we need the current table so we must return true in order for filter to keep it
+    return otherTablesWithCol.length == 0
 }
 
 // converts a function object {name:'funcName' params:['param1', 'param2']} to string 'funcName(param1,param2)'
@@ -93,6 +95,31 @@ function unwrapAggregateColumn(colStr){
         return colStr
 }
 
+//if there is a table with only one column, and this column appears on other tables as well,
+//then remove that table with the one column
+// table has the structure {name:'tableName', columns:['column1', 'column2', 'column3']}
+function getReducedTables(tables) {
+    var i
+    let res = JSON.parse(JSON.stringify(tables))
+    for(i = 0; i < res.length; i++) {
+        if (res[i].columns.length > 1) {
+            //if table has more than one column then it needs to stay
+            continue;
+        }
+        var j
+        console.log("check if table",i," ",res[i],"needs to be removed")
+        for(j = 0; j < res.length; j++) {
+            //if table j contains the only column in table i then table i is redundant
+            console.log("res[j].columns=",j," ",res[j].columns)
+            if( i != j && (res[j].columns.indexOf(res[i].columns[0]) != -1) ) {
+                console.log("removing",res[i])
+                res.splice(i,1)
+            }
+        }
+          
+    }
+    return res
+}
 function getTablesFromCols(columns){
     const schema = schemaStore.getSchema()
     let tables = Object.keys(schema).reduce((tbls, tbl) => {
@@ -103,7 +130,7 @@ function getTablesFromCols(columns){
         return tbls
     }, [])
     //Now check if the same column is on multiple tables. If so, check which table (if any) only contains that single column and remove it
-    return (columns.length === 1 ? [tables[0]] : tables.filter(isTableRedundant)).map(t => t.name)
+    return (columns.length === 1 ? [tables[0].name] : getReducedTables(tables).map(t => t.name))
 }
 
 //returns a tree that only has newTables elements in it's FROM clause
@@ -553,10 +580,9 @@ astUtils.removeSelectColumn = function(tree, columnIdx) {
     if(!columns.length) return null
 
     //Check if there are no columns from a particular table
-    const newTables = getTablesFromCols(astUtils.getColumns(newTree, [], false)) //the function is returning an empty array.
+    const newTables = getTablesFromCols(columns)
     //const newTables = ["weekdays","carriers"]  // for testing purposes as getTablesFromCols isn't working
     const currTables = astUtils.getTables(newTree, [])
-
     currTables.forEach(table => {
         if(newTables.indexOf(table) === -1) {
             newTree = astUtils.removeNaturalJoinTable(newTree, table)
