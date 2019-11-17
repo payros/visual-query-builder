@@ -50,10 +50,10 @@ class SchemaView extends React.Component {
         			toggleType = "TOGGLE_ORDERING"
         			break;
         	}
-        	dispatcher.dispatch({ 
+        	dispatcher.dispatch({
             	type:toggleType,
             	checked:this.state[key]
-            })  
+            })
         })
     }
 
@@ -66,7 +66,7 @@ class SchemaView extends React.Component {
     		content = <ul className="table-list">{ Object.keys(s).map(k => <li><ColumnList title={k} columns={s[k]}/></li>)}</ul>
     	}
         return  <sidebar id="schema-browser">
-        			<h3>Schema</h3>
+        			<h3>Columns</h3>
         			{content}
         			<h3>Operations</h3>
         			<FormGroup row className="toggles-list">
