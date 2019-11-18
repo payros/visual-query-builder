@@ -49,7 +49,7 @@ class ResultsTable extends React.Component {
 			this.setState({error:false, loading:false, errorLog:null, errorClass:null, headers:queryStore.getColumns() })
 		})
     queryStore.on("parse-error", () => {
-      this.setState({error:true, loading:false, errorLog:"Incomplete or unparsable query", errorClass:"warning"})
+      this.setState({error:true, loading:false, errorLog:queryStore.getErrorLog(), errorClass:"warning"})
     })
 
 		schemaStore.on("filtering-toggled", () => this.handleToggle())
@@ -106,7 +106,7 @@ class ResultsTable extends React.Component {
 		const orderCells = this.state.headers.map(v => <OrderCell colNum={this.state.headers.length} column={allColumns[allColumns.map(c => c.name).indexOf(v)]}/>)
 
     const showMsg = this.state.error || !this.state.loading && this.state.headers.length === 0 && this.state.results.length === 0;
-    const msgContent = this.state.errorLog || "Drop a column or type a query"
+    const msgContent = this.state.errorLog || "drop a column or type a query"
     const msgClass = this.state.errorClass || "info"
 
     return  <Paper>

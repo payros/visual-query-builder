@@ -10,6 +10,8 @@ class QueryStore extends EventEmitter {
   constructor() {
     super()
     this.query = null
+    this.errorLog = ""
+    this.errorPos = -1
     // console.log(parser.parse("SELECT count(name) FROM carriers"))
 
     schemaStore.on("filtering-toggled", () => {
@@ -33,6 +35,15 @@ class QueryStore extends EventEmitter {
       }
 
     })
+  }
+
+  setError(errorLog) {
+    this.errorLog = errorLog.substring(0, errorLog.indexOf("Expecting")).replace(/\son\sline\s[0-9]+/i, '').replace(/-*\^/, '').toLowerCase()
+    this.emit("parse-error")
+  }
+
+  getErrorLog() {
+    return this.errorLog
   }
 
   addColumn(col) {
@@ -104,10 +115,13 @@ class QueryStore extends EventEmitter {
     try {
       this.query = queryStr.length ? parser.parse(queryStr) : null
       console.log(this.query)
+      this.errorPos = -1;
       this.emit("query-parsed");
+      return true
     } catch(error){
-      this.emit("parse-error");
-      console.error("PARSE ERROR");
+      this.setError(error.message)
+      console.error("PARSE ERROR", error.message);
+      return false
     }
   }
 
@@ -166,8 +180,8 @@ class QueryStore extends EventEmitter {
         })
 
     } catch(error) {
-      this.emit("parse-error");
-      console.error("PARSE ERROR", error)
+      this.setError(error.message)
+      console.error("PARSE ERROR", error.message)
     }
 
     //Finally, let's color the aggregate functions

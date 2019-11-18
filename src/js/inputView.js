@@ -79,10 +79,13 @@ class SqlForm extends React.Component {
     }
 
     executeQuery(){
-        dispatcher.dispatch({
-           type:'FETCH_RESULTS',
-           query:this.query
-        })
+        const success = queryStore.parseQuery(this.query)
+        if(success){
+          dispatcher.dispatch({
+             type:'FETCH_RESULTS',
+             query:this.query
+          })
+        }
     }
 
     render(){
