@@ -114,7 +114,7 @@ class ResultsTable extends React.Component {
 					{this.state.loading && <Utils.AjaxLoader/>}
 					{showMsg && <p id="msg" className={msgClass}>{msgContent}</p>}
           {!showMsg && !this.state.loading && this.state.results.length === 0 && <p className="empty-msg">No Results</p>}
-					{!showMsg && !this.state.loading && <FlexTable ref="table">
+					{!showMsg && <FlexTable ref="table">
   												<FlexHead>
   										        	<FlexRow>{headerCells}</FlexRow>
   										        	{this.state.filteringToggle && <FlexRow>{filterCells}</FlexRow>}
