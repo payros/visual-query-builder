@@ -671,7 +671,7 @@ astUtils.removeSelectColumn = function(tree, columnIdx) {
     if(!columns.length) return null
 
     //Check if there are no columns from a particular table
-    const newTables = getTablesFromCols(columns)
+    const newTables = getTablesFromCols(columns.map(unwrapAggregateColumn))
     //const newTables = ["weekdays","carriers"]  // for testing purposes as getTablesFromCols isn't working
     const currTables = astUtils.getTables(newTree, [])
     currTables.forEach(table => {
