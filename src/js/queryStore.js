@@ -12,7 +12,6 @@ class QueryStore extends EventEmitter {
     this.query = null
     this.errorLog = ""
     this.errorPos = -1
-    // console.log(parser.parse("SELECT count(name) FROM carriers"))
 
     schemaStore.on("filtering-toggled", () => {
       const isFilteringChecked = schemaStore.getFiltering()
@@ -48,6 +47,7 @@ class QueryStore extends EventEmitter {
 
   setError(errorLog) {
     this.errorLog = errorLog.substring(0, errorLog.indexOf("Expecting")).replace(/\son\sline\s[0-9]+/i, '').replace(/-*\^/, '').toLowerCase()
+    console.log("SET ERROR")
     this.emit("parse-error")
   }
 
@@ -112,9 +112,7 @@ class QueryStore extends EventEmitter {
   }
 
   getOrderFromColumn(colIdx) {
-    console.log("colIdx", colIdx)
     let order = ast.getOrderByColumnIdx(this.query, colIdx)
-    console.log("columnOrderValue", colIdx, order)
     order.order = order.order === null ? "" : order.order.toString()
     order.sort = order.sort === null ? "asc" : order.sort.toLowerCase()
     return order
@@ -124,7 +122,6 @@ class QueryStore extends EventEmitter {
     const whereNode = ast.getWhereColumn(this.query, column, columnType)
     let operator = ""
     let value = ""
-    console.log("whereNode", whereNode)
     if(whereNode !== null) {
       operator = whereNode.type == "LikePredicate" ? "like" : whereNode.operator
       value = whereNode.type == "LikePredicate" ? whereNode.right.value.match(/^'%?([^%]*)%?'$/)[1] : whereNode.right.value

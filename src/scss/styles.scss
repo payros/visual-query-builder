@@ -26,6 +26,27 @@ input::-webkit-inner-spin-button {
     -webkit-appearance: none;
 }
 
+.msg {
+		text-align: center;
+		color:#333;
+		background-color:#eee;
+
+		&.info {
+			color: $primary-dark;
+			background-color: lighten($primary-dark, 50%);
+		}
+
+		&.warning {
+			color: darken($accent, 30%);
+			background-color: lighten($accent, 35%);
+		}
+
+		&.error {
+			color: $secondary-dark;
+			background-color: lighten($secondary-dark, 35%);
+		}
+}
+
 /********** SPECIFIC STYLES **********/
 html, body {
 	height:100%;
@@ -252,35 +273,15 @@ sidebar {
 		}
 	}
 
-	#msg {
-		position: absolute;
+	.msg {
+			position: absolute;
 	    left: 0;
 	    right: 0;
 	    top: 50%;
 	    transform: translateY(-50%);
 	    margin: 0;
 	    padding: 30px 15px;
-		font: 200 2rem sans-serif;
-		text-align: center;
-		color:#333;
-		background-color:#eee;
-
-		&.info {
-			color: $primary-dark;
-			background-color: lighten($primary-dark, 50%);
-		}
-
-		&.warning {
-			color: darken($accent, 30%);
-			background-color: lighten($accent, 35%);
-		}
-
-		&.error {
-			color: $secondary-dark;
-			background-color: lighten($secondary-dark, 35%);
-		}
-
-
+			font: 200 2rem sans-serif;
 	}
 
 	.empty-msg {
@@ -346,6 +347,53 @@ sidebar {
 				pointer-events: none;
 				padding:2% 3%;
 			}
+	}
+
+	.msg {
+		position: absolute;
+		bottom: 0;
+		width: 90%;
+		max-height: 30%;
+		padding: 10px;
+		margin-bottom: 10px;
+		margin: 0 5% 2%;
+		box-sizing: border-box;
+		border-radius: 4px;
+		box-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14), 0px 1px 3px 0px rgba(0,0,0,0.12);
+		opacity: 0;
+		bottom:-100%;
+
+		&.msg-box-enter {
+				opacity: 0;
+				bottom:-100%;
+		}
+
+		&.msg-box-enter-active {
+				transition: opacity 800ms ease-out, bottom 800ms ease-out;
+				opacity: 1;
+				bottom:0;
+		}
+
+		&.msg-box-enter-done {
+			opacity:1;
+			bottom:0;
+		}
+
+		&.msg-box-exit {
+			opacity: 1;
+			bottom:0;
+		}
+
+		&.msg-box-exit-active {
+			opacity: 0;
+			bottom:-100%;
+			transition: opacity 800ms ease-in, bottom 800ms ease-in;
+		}
+
+		&.msg-box-exit-done {
+			opacity:0;
+			bottom:-100%;
+		}
 	}
 
 	.input-form {

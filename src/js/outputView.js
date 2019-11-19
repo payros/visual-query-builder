@@ -4,6 +4,7 @@ import resultsStore from './resultsStore'
 import queryStore from './queryStore'
 import schemaStore from './schemaStore'
 import dispatcher from './dispatcher'
+import MessageBox from './messageBox'
 import { FlexTable, FlexHead, FlexBody, FlexRow, FlexCell } from './flexTable'
 import Utils from './utils'
 
@@ -24,32 +25,31 @@ class ResultsTable extends React.Component {
     		results:[],
     	  loading:false,
     		error:false,
-    		errorLog:"",
     		dragging:false,
     		filteringToggle:schemaStore.getFiltering(),
-			groupingToggle:schemaStore.getGrouping(),
-			orderingToggle:schemaStore.getOrdering()
-		}
-  	}
+  			groupingToggle:schemaStore.getGrouping(),
+  			orderingToggle:schemaStore.getOrdering()
+  		}
+  }
 
 	componentWillMount(){
 		//Allows this component to listen to events
     dispatcher.register(this.handleEvents.bind(this))
 
 		resultsStore.on("results-loading", () => {
-			this.setState({error:false, loading:true, errorLog:null, errorClass:null, results:[]})
+			this.setState({error:false, loading:true})
 		})
 		resultsStore.on("results-fetched", () => {
-			this.setState({error:false, loading:false, errorLog:null, errorClass:null, results:resultsStore.getResults()})
+			this.setState({error:false, loading:false, headers:queryStore.getColumns(), results:resultsStore.getResults()})
 		})
 		resultsStore.on("results-error", () => {
-			this.setState({error:true, loading:false, errorLog:resultsStore.getErrorLog(), errorClass:"error"})
+			this.setState({error:true, loading:false})
 		})
 		queryStore.on("query-parsed", () => {
-			this.setState({error:false, loading:false, errorLog:null, errorClass:null, headers:queryStore.getColumns() })
+			this.setState({error:false, loading:false})
 		})
     queryStore.on("parse-error", () => {
-      this.setState({error:true, loading:false, errorLog:queryStore.getErrorLog(), errorClass:"warning"})
+      this.setState({error:true, loading:false})
     })
 
 		schemaStore.on("filtering-toggled", () => this.handleToggle())
@@ -104,15 +104,12 @@ class ResultsTable extends React.Component {
 		const filterCells = this.state.headers.map(headerStr => <FilterCell column={{name:headerStr, type:Utils.getTypeFromHeader(headerStr, allColumns)}}/>)
 		const groupCells = this.state.headers.map((headerStr, idx) => <GroupCell idx={idx} column={{name:headerStr, type:Utils.getTypeFromHeader(headerStr, allColumns)}}/>)
 		const orderCells = this.state.headers.map((headerStr, idx) => <OrderCell idx={idx} colNum={this.state.headers.length} column={{name:headerStr, type:Utils.getTypeFromHeader(headerStr, allColumns)}}/>)
-
-    const showMsg = this.state.error || !this.state.loading && this.state.headers.length === 0 && this.state.results.length === 0;
-    const msgContent = this.state.errorLog || "drop a column or type a query"
-    const msgClass = this.state.errorClass || "info"
+    const showMsg = !this.state.loading && !resultsStore.getShowTable();
 
     return  <Paper>
 					{this.state.dragging && <div className="drop-curtain" onDragOver={this.handleDragOver} onDrop={(ev) => this.handleDrop(ev)}><p>Drop to Add Column to Query</p></div>}
 					{this.state.loading && <Utils.AjaxLoader/>}
-					{showMsg && <p id="msg" className={msgClass}>{msgContent}</p>}
+					<MessageBox show={showMsg} animate={false}/>
           {!showMsg && !this.state.loading && this.state.results.length === 0 && <p className="empty-msg">No Results</p>}
 					{!showMsg && <FlexTable ref="table">
   												<FlexHead>

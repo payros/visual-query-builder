@@ -5,11 +5,13 @@ import dispatcher from './dispatcher'
 class ResultsStore extends EventEmitter {
   constructor() {
     super()
+    this.showTable = false
     this.results = []
     this.errorLog = ""
   }
 
   setResults(results) {
+    this.prevCount = this.results.length
     this.results = results
     setTimeout(() => { this.emit("results-fetched") }) // Avoids dispatcher invariant issues
   }
@@ -23,6 +25,14 @@ class ResultsStore extends EventEmitter {
     return this.results
   }
 
+  getShowTable(){
+    return this.showTable
+  }
+
+  setShowTable(showTable){
+    this.showTable = showTable
+  }
+
   getErrorLog() {
     return this.errorLog
   }
@@ -34,12 +44,14 @@ class ResultsStore extends EventEmitter {
             if(action.query.length){
               axios.get('/query', {params: { q:action.query }}).then(res => {
                 if(res.data){
+                  this.setShowTable(true)
                   this.setResults(res.data)
                 }
               }).catch(err => {
                 this.setError(err.response.data)
-              })              
+              })
             } else {
+              this.setShowTable(false)
               this.setResults([])
             }
             break

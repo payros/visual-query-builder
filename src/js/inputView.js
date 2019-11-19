@@ -1,5 +1,6 @@
 import React from 'react'
 import ContentEditable from 'react-contenteditable'
+import MessageBox from './messageBox'
 import queryStore from './queryStore'
 import resultsStore from './resultsStore'
 import dispatcher from './dispatcher'
@@ -29,6 +30,7 @@ class SqlForm extends React.Component {
             this.executeQuery()
 
         })
+
         resultsStore.on("results-fetched", () => {
             dispatcher.dispatch({
                type:'UPDATE_QUERY',
@@ -71,11 +73,11 @@ class SqlForm extends React.Component {
     }
 
     handleFocus(){
-      this.setState({ placeholder:">" })
+      if(this.query.length === 0) this.setState({ placeholder:">" })
     }
 
     handleBlur(){
-      this.setState({ placeholder:this.query.length ? ">" : "> Type SQL Query" })
+      if(this.query.length === 0) this.setState({ placeholder:this.query.length ? ">" : "> Type SQL Query" })
     }
 
     executeQuery(){
@@ -92,8 +94,26 @@ class SqlForm extends React.Component {
         return  <React.Fragment>
                   <p className="placeholder">{this.state.placeholder}</p>
                   <ContentEditable ref="inputbox" className="input-form" html={this.state.html} onFocus={ () => this.handleFocus() }  onBlur={ () => this.handleBlur() } onChange={(e) => this.handleChange(e)}/>
+                  <InputMessageBox/>
                 </React.Fragment>
     }
+}
+
+class InputMessageBox extends React.Component {
+  constructor(){
+    super();
+    this.state = {show:false}
+  }
+
+  componentWillMount(){
+      resultsStore.on("results-loading", () => this.setState({show:false}))
+      queryStore.on("parse-error", () => this.setState({show:resultsStore.getShowTable()}))
+      resultsStore.on("results-error", () => this.setState({show:resultsStore.getShowTable()}))
+  }
+
+  render(){
+    return <MessageBox show={this.state.show} animate={true}/>
+  }
 }
 
 export default InputView
