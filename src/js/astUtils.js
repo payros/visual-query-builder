@@ -560,13 +560,13 @@ astUtils.getWhereColumn = function(tree, column, colType) {
 
 /* ------- ORDER BY FUNCTIONS ------- */
 //sortOpt can be desc or asc or null (null is the same as asc and it's by default)
-astUtils.addOrderByColumn = function(tree, column, sortOpt=null) {
+astUtils.addOrderByColumn = function(tree, column, colIdx, sortOpt=null) {
     let newTree = JSON.parse(JSON.stringify(tree))
-    let newOrderByElement = 
+    let newOrderByElement =
     {"type":"GroupByOrderByItem",
      "value":{"type":"Identifier","value":column},
      "sortOpt":sortOpt}
-     
+
     //if orderBy is null then create it with an empty value array
     if(newTree.value.orderBy == null) {
         newTree.value.orderBy = {"type":"OrderBy",
@@ -574,9 +574,9 @@ astUtils.addOrderByColumn = function(tree, column, sortOpt=null) {
         "rollUp":null}
     }
     //push column to value array
-    newTree.value.orderBy.value.push(newOrderByElement)
+    newTree.value.orderBy.value.splice(colIdx, 0, newOrderByElement)
     return newTree
-    
+
 }
 
 //returns a new tree with column removed from ORDER BY list
@@ -589,7 +589,7 @@ astUtils.removeOrderByColumn = function(tree, column) {
             break //now i will have the right index value
         }
     }
-    
+
     orderByArray.splice(i,1)
     //if this was last one, then remove ORDER BY from query
     if(orderByArray.length == 0) {
