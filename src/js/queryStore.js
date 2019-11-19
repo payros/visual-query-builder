@@ -103,17 +103,18 @@ class QueryStore extends EventEmitter {
     return ast.getGroupByColumn(column)
   }
 
-  orderColumn(column, order, sort){
+  orderColumn(colIdx, order, sort){
     // First remove ordering by this column if it's present
-    this.query = ast.removeOrderByColumn(this.query, column)
+    this.query = ast.removeOrderByColumn(this.query, colIdx)
     // Now add it again
-    this.query = ast.addOrderByColumn(this.query, column, order, sort)
+    this.query = ast.addOrderByColumn(this.query, colIdx, order, sort)
     setTimeout(() => { this.emit("query-updated") })  // Avoids dispatcher invariant issues
   }
 
-  getOrderFromColumn(column) {
-    let order = ast.getOrderByColumnIdx(this.query, column)
-    console.log("columnOrderValue", column, order)
+  getOrderFromColumn(colIdx) {
+    console.log("colIdx", colIdx)
+    let order = ast.getOrderByColumnIdx(this.query, colIdx)
+    console.log("columnOrderValue", colIdx, order)
     order.order = order.order === null ? "" : order.order.toString()
     order.sort = order.sort === null ? "asc" : order.sort.toLowerCase()
     return order
@@ -210,7 +211,6 @@ class QueryStore extends EventEmitter {
     optionalClauses.forEach((optional, i) => {
       optional.clause = optional.clause.replace(funcRegex, ($0, $1, $2, $3) => '<span class="function group-by">' + $1.toUpperCase() + $2 + '</span>' + $3);
     })
-    // console.log("optClauses", optionalClauses, optionalClauses.reduce((str, opt) => str + opt.keyword + opt.clause,''))
     let html = '<p>' + selectKeyword + selectClause + fromKeyword + fromClause + optionalClauses.reduce((str, opt) => str + opt.keyword + opt.clause,'') + '</p>'
     // console.log("OUTPUT HTML:", html)
     return html

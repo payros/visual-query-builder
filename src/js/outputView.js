@@ -102,8 +102,8 @@ class ResultsTable extends React.Component {
 		const allColumns = Object.keys(schema).reduce((arr, table) => arr.concat(schema[table]), [])
 		const headerCells = this.state.headers.map((col, idx) => <FlexCell className="column-remove-btn" onClick={() => this.handleRemoveColumn(idx)} >{col}</FlexCell>)
 		const filterCells = this.state.headers.map(headerStr => <FilterCell column={{name:headerStr, type:Utils.getTypeFromHeader(headerStr, allColumns)}}/>)
-		const groupCells = this.state.headers.map((headerStr,idx) => <GroupCell idx={idx} column={{name:headerStr, type:Utils.getTypeFromHeader(headerStr, allColumns)}}/>)
-		const orderCells = this.state.headers.map(v => <OrderCell colNum={this.state.headers.length} column={allColumns[allColumns.map(c => c.name).indexOf(v)]}/>)
+		const groupCells = this.state.headers.map((headerStr, idx) => <GroupCell idx={idx} column={{name:headerStr, type:Utils.getTypeFromHeader(headerStr, allColumns)}}/>)
+		const orderCells = this.state.headers.map((headerStr, idx) => <OrderCell idx={idx} colNum={this.state.headers.length} column={{name:headerStr, type:Utils.getTypeFromHeader(headerStr, allColumns)}}/>)
 
     const showMsg = this.state.error || !this.state.loading && this.state.headers.length === 0 && this.state.results.length === 0;
     const msgContent = this.state.errorLog || "drop a column or type a query"
@@ -220,12 +220,12 @@ class GroupCell extends React.Component {
 class OrderCell extends React.Component {
 	constructor(props) {
     	super(props)
-    	this.state = queryStore.getOrderFromColumn(this.props.column.name)
+    	this.state = queryStore.getOrderFromColumn(this.props.idx)
   	}
 
   	componentWillMount(){
 		resultsStore.on("results-fetched", () => {
-			this.setState(queryStore.getOrderFromColumn(this.props.column.name))
+			this.setState(queryStore.getOrderFromColumn(this.props.idx))
 		})
 	}
 
@@ -234,7 +234,7 @@ class OrderCell extends React.Component {
         this.setState({ [key]: e.target.value }, () => {
             dispatcher.dispatch({
             	type:'ORDER_COLUMN',
-            	column:this.props.column.name,
+            	column:this.props.idx,
             	order:this.state.order.length ? parseInt(this.state.order) : null,
             	sort:this.state.sort === "desc" ? "DESC" : null
             })

@@ -14,14 +14,13 @@ function isTableRedundant(table, tableIndex, tables){
     //If table has a single column, check to see if it is on other tables
     const columnToCheck = table.columns[0]
     const otherTablesWithCol = tables.filter(t => t.name !== table.name && t.columns.indexOf(columnToCheck) > -1)
-    // console.log("otherTables=",otherTablesWithCol)
     //if otherTablesWithCol is empty then then we need the current table so we must return true in order for filter to keep it
     return otherTablesWithCol.length == 0
 }
 
 // converts a function object {name:'funcName' params:['param1', 'param2']} to string 'funcName(param1,param2)'
 function funcToString(funcObj){
-    if(funcObj.type !== "FunctionCall") return ""
+    if(funcObj.type === "Identifier") return funcObj.value
     const funcName = funcObj.name
     const funcParams = funcObj.params.reduce((str, p, i) => str += (p.value ? p.value : p) + (i+1 === funcObj.params.length ? "" : ",") ,"")
     return funcName + "(" + funcParams + ")"
@@ -53,9 +52,9 @@ function colsToStar(oldColumns, tables){
     return newColumns
 }
 
-function mapColString(colStr){
+function mapColString(colStr, isOrderItem){
     const funcMatch = colStr.match(/([a-zA-Z]+)\((.+)\)/)
-    let colObj = { alias:null, hasAs:null }
+    let colObj = isOrderItem === true ? {} : { alias:null, hasAs:null }
     if(funcMatch){
         colObj.type = "FunctionCall"
         colObj.name = funcMatch[1]
@@ -110,7 +109,6 @@ function getReducedTables(tables) {
         for(j = 0; j < res.length; j++) {
             //if table j contains the only column in table i then table i is redundant
             if( i != j && (res[j].columns.map(t => t.name).indexOf(res[i].columns[0].name) != -1) ) {
-                console.log("removing",res[i])
                 res.splice(i,1)
             }
         }
@@ -244,13 +242,74 @@ astUtils.getTables = function(tree, tableList){
 
 
 
+/* ------- ORDER BY FUNCTIONS ------- */
+//sortOpt can be desc or asc or null (null is the same as asc and it's by default)
+astUtils.addOrderByColumn = function(tree, colIdx, order, sortOpt=null) {
+    if(tree === null || order === null) return tree
+    let newTree = JSON.parse(JSON.stringify(tree))
+    const colName = astUtils.getColumns(newTree, [], true)[colIdx]
+    let newOrderByElement =
+    {"type":"GroupByOrderByItem",
+     "value": mapColString(colName, true),
+     "sortOpt":sortOpt}
+
+    //if orderBy is null then create it with an empty value array
+    if(newTree.value.orderBy == null) {
+        newTree.value.orderBy = {"type":"OrderBy",
+        "value":[],
+        "rollUp":null}
+    }
+    //push column to value array
+    newTree.value.orderBy.value.splice(order, 0, newOrderByElement)
+    return newTree
+
+}
+
+//returns a new tree with column removed from ORDER BY list
+astUtils.removeOrderByColumn = function(tree, colIdx) {
+    if(tree === null || tree.value.orderBy == null) return tree
+    let newTree = JSON.parse(JSON.stringify(tree))
+    const colName = astUtils.getColumns(newTree, [], true)[colIdx].toLowerCase()
+    newTree.value.orderBy.value = newTree.value.orderBy.value.filter(s => funcToString(s.value).toLowerCase() != colName)
+
+    //if this was last one, then remove ORDER BY from query
+    if(newTree.value.orderBy.value.length == 0) {
+        newTree.value.orderBy = null
+    }
+    return newTree
+}
+
+astUtils.removeAllOrderByColumns = function(tree) {
+    if(tree === null || tree.value.orderBy == null) return tree
+    let newTree = JSON.parse(JSON.stringify(tree))
+    newTree.value.orderBy = null
+    return newTree
+}
+
+astUtils.getOrderByColumnIdx = function(tree, colIdx) {
+    if(tree === null || tree.value.orderBy == null) return {order:null, sort:null}
+    console.log("columns:", astUtils.getColumns(tree, [], true), "colIdx:", colIdx)
+    const colName = astUtils.getColumns(tree, [], true)[colIdx].toLowerCase()
+    const sortObjs = tree.value.orderBy.value.reduce((arr, c, i) => {
+      if(funcToString(c.value).toLowerCase() === colName) arr.push({order:i, sort:c.sortOpt})
+      return arr
+    }, [])
+
+    return sortObjs.length ? sortObjs[0] : {order:null, sort:null}
+}
+
+
+
+
+
 /* ------- GROUP BY FUNCTIONS ------- */
 
 // Adds (or removes if func === "") a function from the selected column index  and adds (or removes if func !== "") the column in the the groupBy clause
 astUtils.addGroupByColumn = function(tree, colIdx, func){
+    if(tree === null) return tree
     let newTree = JSON.parse(JSON.stringify(tree))
     let columns = astUtils.getColumns(newTree, [], true)
-
+    const columnOrder = astUtils.getOrderByColumnIdx(newTree, colIdx)
     // We're adding an aggregate function
     if(func.length) {
         const colName = unwrapAggregateColumn(columns[colIdx])
@@ -259,18 +318,28 @@ astUtils.addGroupByColumn = function(tree, colIdx, func){
         // Remove the column from the group by array
         if(newTree.value.groupBy !== null) {
             newTree.value.groupBy.value = newTree.value.groupBy.value.filter(item => item.value.value !== colName)
+            // Remove GroupBy if we don't have any more items in there
+            if(newTree.value.groupBy.value.length === 0) newTree.value.groupBy = null
+        }
+
+        //Also, wrap the orderBy column if present
+        if(columnOrder.order !== null) {
+          newTree.value.orderBy.value[columnOrder.order].value = mapColString(func + "(" + colName + ")", true)
         }
 
     // We're removing an aggregate function
     } else {
-        const funcMatch = columns[colIdx].match(/([a-zA-Z]+)\((.+)\)/)
+        const funcMatch = columns[colIdx].match(/([a-zA-Z]+)\((.+)\)$/)
         columns[colIdx] = funcMatch[2]
 
         // Add the column from the group by array
-        if(newTree.value.groupBy === null) {
-            newTree.value.groupBy = {rollUp:null, type:"GroupBy", value:[]}
-        }
+        if(newTree.value.groupBy === null) newTree.value.groupBy = {rollUp:null, type:"GroupBy", value:[]}
         newTree.value.groupBy.value.push({sortOpt:null, type:"GroupByOrderByItem", value:{type: "Identifier", value: funcMatch[2]}})
+
+        //Also, unwrap the orderBy column if present
+        if(columnOrder.order !== null) {
+          newTree.value.orderBy.value[columnOrder.order].value.value = funcMatch[2]
+        }
     }
 
     //Finally add the new select columns to the tree
@@ -558,61 +627,6 @@ astUtils.getWhereColumn = function(tree, column, colType) {
 
 
 
-/* ------- ORDER BY FUNCTIONS ------- */
-//sortOpt can be desc or asc or null (null is the same as asc and it's by default)
-astUtils.addOrderByColumn = function(tree, column, colIdx, sortOpt=null) {
-    if(tree === null || colIdx === null) return tree
-    let newTree = JSON.parse(JSON.stringify(tree))
-    let newOrderByElement =
-    {"type":"GroupByOrderByItem",
-     "value":{"type":"Identifier","value":column},
-     "sortOpt":sortOpt}
-
-    //if orderBy is null then create it with an empty value array
-    if(newTree.value.orderBy == null) {
-        newTree.value.orderBy = {"type":"OrderBy",
-        "value":[],
-        "rollUp":null}
-    }
-    //push column to value array
-    newTree.value.orderBy.value.splice(colIdx, 0, newOrderByElement)
-    return newTree
-
-}
-
-//returns a new tree with column removed from ORDER BY list
-astUtils.removeOrderByColumn = function(tree, column) {
-    if(tree === null || tree.value.orderBy == null) return tree
-    let newTree = JSON.parse(JSON.stringify(tree))
-    newTree.value.orderBy.value = newTree.value.orderBy.value.filter(s => s.value.value != column)
-
-    //if this was last one, then remove ORDER BY from query
-    if(newTree.value.orderBy.value.length == 0) {
-        newTree.value.orderBy = null
-    }
-    return newTree
-}
-
-astUtils.removeAllOrderByColumns = function(tree) {
-    if(tree === null || tree.value.orderBy == null) return tree
-    let newTree = JSON.parse(JSON.stringify(tree))
-    newTree.value.orderBy = null
-    return newTree
-}
-
-astUtils.getOrderByColumnIdx = function(tree, column) {
-    if(tree === null || tree.value.orderBy == null) return {order:null, sort:null}
-    const sortObjs = tree.value.orderBy.value.reduce((arr, c, i) => {
-      if(c.value.value === column) arr.push({order:i, sort:c.sortOpt})
-      return arr
-    }, [])
-
-    return sortObjs.length ? sortObjs[0] : {order:null, sort:null}
-}
-
-
-
-
 /* ------- SELECT FUNCTIONS ------- */
 
 
@@ -671,11 +685,11 @@ astUtils.removeSelectColumn = function(tree, columnIdx) {
     //Remove where clause for that column
     newTree = astUtils.removeWhereColumn(newTree, colName, getOperatorForColumn(colName))
 
-    //TO DO Remove grouping for the column
+    //Remove grouping for the column
     newTree = astUtils.removeGroupByColumn(newTree, colName)
 
-    //TO DO Remove ordering for that colum
-    newTree = astUtils.removeOrderByColumn(newTree,colName)
+    //Remove ordering for that colum
+    newTree = astUtils.removeOrderByColumn(newTree,columnIdx)
 
     //Convert to * optimized column list
     let newColumns = colsToStar(columns, newTables)
