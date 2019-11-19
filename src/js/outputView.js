@@ -220,13 +220,12 @@ class GroupCell extends React.Component {
 class OrderCell extends React.Component {
 	constructor(props) {
     	super(props)
-    	this.state = {order:"", sort:"asc"}
+    	this.state = queryStore.getOrderFromColumn(this.props.column.name)
   	}
 
   	componentWillMount(){
 		resultsStore.on("results-fetched", () => {
-			//TO DO update ordering value based on existing query
-			//this.setState({func:newFunc})
+			this.setState(queryStore.getOrderFromColumn(this.props.column.name))
 		})
 	}
 
@@ -236,20 +235,20 @@ class OrderCell extends React.Component {
             dispatcher.dispatch({
             	type:'ORDER_COLUMN',
             	column:this.props.column.name,
-            	order:this.state.order,
-            	sort:this.state.sort
+            	order:this.state.order.length ? parseInt(this.state.order) : null,
+            	sort:this.state.sort === "desc" ? "DESC" : null
             })
         })
     }
 
 	render(){
-		const numberOptions = [...Array(this.props.colNum).keys()].map(i => <option value={i+1} >{i+1}</option>)
+		const numberOptions = [...Array(this.props.colNum).keys()].map(i => <option value={i} >{i+1}</option>)
 		return <FlexCell className="order" {...this.props} >
-					<NativeSelect value={this.state.operator} onChange={(ev) => this.handleChange(ev)} inputProps={{ name: 'order' }}>
+					<NativeSelect value={this.state.order} onChange={(ev) => this.handleChange(ev)} inputProps={{ name: 'order' }}>
 						<option value="" >unordered</option>
 						{numberOptions}
         			</NativeSelect>
-        			<NativeSelect value={this.state.operator} onChange={(ev) => this.handleChange(ev)} inputProps={{ name: 'asc' }}>
+        			<NativeSelect value={this.state.sort} onChange={(ev) => this.handleChange(ev)} inputProps={{ name: 'sort' }}>
 						<option value="asc" >ascending</option>
 						<option value="desc" >descending</option>
         			</NativeSelect>

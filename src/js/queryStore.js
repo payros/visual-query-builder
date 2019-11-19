@@ -35,6 +35,15 @@ class QueryStore extends EventEmitter {
       }
 
     })
+
+    schemaStore.on("ordering-toggled", () => {
+      const isOrderingChecked = schemaStore.getOrdering()
+
+      if(!isOrderingChecked && this.query !== null) {
+        this.query = ast.removeAllOrderByColumns(this.query)
+        setTimeout(() => { this.emit("query-updated") })  // Avoids dispatcher invariant issues
+      }
+    })
   }
 
   setError(errorLog) {
@@ -95,7 +104,19 @@ class QueryStore extends EventEmitter {
   }
 
   orderColumn(column, order, sort){
-    //TO DO add ordering to the ast tree
+    // First remove ordering by this column if it's present
+    this.query = ast.removeOrderByColumn(this.query, column)
+    // Now add it again
+    this.query = ast.addOrderByColumn(this.query, column, order, sort)
+    setTimeout(() => { this.emit("query-updated") })  // Avoids dispatcher invariant issues
+  }
+
+  getOrderFromColumn(column) {
+    let order = ast.getOrderByColumnIdx(this.query, column)
+    console.log("columnOrderValue", column, order)
+    order.order = order.order === null ? "" : order.order.toString()
+    order.sort = order.sort === null ? "asc" : order.sort.toLowerCase()
+    return order
   }
 
   getWhereForColumn(column, columnType) {
@@ -170,8 +191,6 @@ class QueryStore extends EventEmitter {
         currColumns = ast.getColumns(queryTree, currColumns, true)
         //Finally, turn it into a string that can be used in the regex
         currColumns = currColumns.reduce((str, c) => str + "|" + c,  "").substring(1).replace('*', '\\*')
-
-        console.log('currColumns', currColumns)
 
         let colRegex = new RegExp('(' + currColumns + ')', 'gi')
         selectClause = selectClause.replace(colRegex, '<span class="column select">$1</span>');

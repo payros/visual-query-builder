@@ -561,7 +561,7 @@ astUtils.getWhereColumn = function(tree, column, colType) {
 /* ------- ORDER BY FUNCTIONS ------- */
 //sortOpt can be desc or asc or null (null is the same as asc and it's by default)
 astUtils.addOrderByColumn = function(tree, column, colIdx, sortOpt=null) {
-    if(tree === null) return null
+    if(tree === null || colIdx === null) return tree
     let newTree = JSON.parse(JSON.stringify(tree))
     let newOrderByElement =
     {"type":"GroupByOrderByItem",
@@ -598,6 +598,16 @@ astUtils.removeAllOrderByColumns = function(tree) {
     let newTree = JSON.parse(JSON.stringify(tree))
     newTree.value.orderBy = null
     return newTree
+}
+
+astUtils.getOrderByColumnIdx = function(tree, column) {
+    if(tree === null || tree.value.orderBy == null) return {order:null, sort:null}
+    const sortObjs = tree.value.orderBy.value.reduce((arr, c, i) => {
+      if(c.value.value === column) arr.push({order:i, sort:c.sortOpt})
+      return arr
+    }, [])
+
+    return sortObjs.length ? sortObjs[0] : {order:null, sort:null}
 }
 
 
