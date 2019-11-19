@@ -559,6 +559,50 @@ astUtils.getWhereColumn = function(tree, column, colType) {
 
 
 /* ------- ORDER BY FUNCTIONS ------- */
+//sortOpt can be desc or asc or null (null is the same as asc and it's by default)
+astUtils.addOrderByColumn = function(tree, column, sortOpt=null) {
+    let newTree = JSON.parse(JSON.stringify(tree))
+    let newOrderByElement = 
+    {"type":"GroupByOrderByItem",
+     "value":{"type":"Identifier","value":column},
+     "sortOpt":sortOpt}
+     
+    //if orderBy is null then create it with an empty value array
+    if(newTree.value.orderBy == null) {
+        newTree.value.orderBy = {"type":"OrderBy",
+        "value":[],
+        "rollUp":null}
+    }
+    //push column to value array
+    newTree.value.orderBy.value.push(newOrderByElement)
+    return newTree
+    
+}
+
+//returns a new tree with column removed from ORDER BY list
+astUtils.removeOrderByColumn = function(tree, column) {
+    let newTree = JSON.parse(JSON.stringify(tree))
+    let orderByArray = newTree.value.orderBy.value
+    var i
+    for(i =0; i < orderByArray.length; i++) {
+        if(orderByArray[i].value.value == column) {
+            break //now i will have the right index value
+        }
+    }
+    
+    orderByArray.splice(i,1)
+    //if this was last one, then remove ORDER BY from query
+    if(orderByArray.length == 0) {
+        newTree.value.orderBy = null
+    }
+    return newTree
+}
+
+astUtils.removeAllOrderByColumns = function(tree) {
+    let newTree = JSON.parse(JSON.stringify(tree))
+    newTree.value.orderBy = null
+    return newTree
+}
 
 
 
@@ -625,6 +669,7 @@ astUtils.removeSelectColumn = function(tree, columnIdx) {
     newTree = astUtils.removeGroupByColumn(newTree, colName)
 
     //TO DO Remove ordering for that colum
+    newTree = astUtils.removeOrderByColumn(newTree,colName)
 
     //Convert to * optimized column list
     let newColumns = colsToStar(columns, newTables)
