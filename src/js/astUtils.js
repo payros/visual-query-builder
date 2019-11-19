@@ -582,15 +582,8 @@ astUtils.addOrderByColumn = function(tree, column, colIdx, sortOpt=null) {
 //returns a new tree with column removed from ORDER BY list
 astUtils.removeOrderByColumn = function(tree, column) {
     let newTree = JSON.parse(JSON.stringify(tree))
-    let orderByArray = newTree.value.orderBy.value
-    var i
-    for(i =0; i < orderByArray.length; i++) {
-        if(orderByArray[i].value.value == column) {
-            break //now i will have the right index value
-        }
-    }
+    newTree.value.orderBy.value = newTree.value.orderBy.value.filter(s => s.value.value != column)
 
-    orderByArray.splice(i,1)
     //if this was last one, then remove ORDER BY from query
     if(orderByArray.length == 0) {
         newTree.value.orderBy = null
