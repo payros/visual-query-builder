@@ -25,7 +25,14 @@
     list-style: none;
     padding:0;
     margin:0;
-    border-bottom:1px solid #eee;
+    // border-bottom:1px solid #eee;
+
+		&:nth-child(even) {
+			background: #F7F7F7;
+		}
+		&:nth-child(odd) {
+			background: #FFF;
+		}
 
     &.sm-font > .flex-cell {
     	font-size:0.7rem;
