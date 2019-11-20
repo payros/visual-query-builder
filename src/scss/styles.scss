@@ -359,9 +359,13 @@ sidebar {
 		margin: 0 5% 2%;
 		box-sizing: border-box;
 		border-radius: 4px;
+		border: 1px solid;
 		box-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14), 0px 1px 3px 0px rgba(0,0,0,0.12);
-		opacity: 0;
-		bottom:-100%;
+
+		&.msg-hide {
+			opacity: 0;
+			bottom:-100%;
+		}
 
 		&.msg-box-enter {
 				opacity: 0;
@@ -369,7 +373,7 @@ sidebar {
 		}
 
 		&.msg-box-enter-active {
-				transition: opacity 800ms ease-out, bottom 800ms ease-out;
+				transition: opacity 400ms ease-out, bottom 400ms ease-out;
 				opacity: 1;
 				bottom:0;
 		}

@@ -47,7 +47,6 @@ class QueryStore extends EventEmitter {
 
   setError(errorLog) {
     this.errorLog = errorLog.substring(0, errorLog.indexOf("Expecting")).replace(/\son\sline\s[0-9]+/i, '').replace(/-*\^/, '').toLowerCase()
-    console.log("SET ERROR")
     this.emit("parse-error")
   }
 

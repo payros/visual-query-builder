@@ -10,9 +10,7 @@ class MessageBox extends React.Component {
   }
 
   getDerivedStateFromProps(nextProps, prevState) {
-   return prevState.show != nextProps.show ? {
-      show: nextProps.show,
-    } : {};
+   return  { show: nextProps.show }
   }
 
   componentDidMount(){
@@ -38,9 +36,10 @@ class MessageBox extends React.Component {
    }
 
   render(){
+    console.log(this.state.show)
       if(this.props.animate){
         return <CSSTransition classNames="msg-box" in={this.state.show} timeout={1000}>
-                  <div className={"msg " + this.state.msgClass}>{this.state.msgLog}</div>
+                  <div className={"msg " + this.state.msgClass + (this.state.show ? "" : " msg-hide")}>{this.state.msgLog}</div>
                </CSSTransition>
       } else {
         return this.props.show && <div className={"msg " + this.state.msgClass}>{this.state.msgLog}</div>
