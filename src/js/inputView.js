@@ -20,7 +20,7 @@ class SqlForm extends React.Component {
         this.requestTimeout = null;
         this.query = queryStore.getQueryString()
         this.state = { html:queryStore.getQueryHTML(), placeholder:this.query.length ? ">" : "> Type SQL Query"};
-        this.delay = 1000;
+        this.delay = 1500;
     }
 
     componentWillMount(){
@@ -28,7 +28,6 @@ class SqlForm extends React.Component {
             this.query = queryStore.getQueryString()
             this.setState({html:queryStore.getQueryHTML(), placeholder:this.query.length ? ">" : "> Type SQL Query"})
             this.executeQuery()
-
         })
 
         resultsStore.on("results-fetched", () => {
@@ -37,6 +36,11 @@ class SqlForm extends React.Component {
                query:this.query
             })
         })
+
+        resultsStore.on("results-error", (errorPos) => {
+            this.safelyUpdateHTML(queryStore.getErrorHTML(undefined, "error", errorPos))
+            // this.setState({placeholder:this.query.length ? ">" : "> Type SQL Query"})
+         })
     }
 
     componentDidMount() {
@@ -54,17 +58,19 @@ class SqlForm extends React.Component {
         }
     }
 
+    safelyUpdateHTML(html) {
+        const positions = Utils.getCaretPosition(this.refs.inputbox.el.current)
+        const caretPosition = positions ? positions[0] : null
+        this.setState({ html:html, placeholder:this.query.length || caretPosition !== null ? ">" : "> Type SQL Query"}, () => {
+          if(this.query.length && positions && positions[0] === positions[1]) Utils.setCaretPosition(this.refs.inputbox.el.current, caretPosition)
+        })
+    }
+
     handleChange(event) {
         const query = Utils.getStringFromHTML(event.target.value)
         const HTML = queryStore.getQueryHTML(query)
-        const carretPosition = Utils.getCaretPosition(this.refs.inputbox.el.current)[0]
-        const stringLength = query.length
-
-        //Only update the html colors if the carret is at the end, otherwise it will jump
-        if(carretPosition === stringLength) {
-            this.setState({ html:HTML })
-        }
-
+        // Manually set the caret position to avoid making it jump
+        this.safelyUpdateHTML(HTML)
         //Now fetch new results based on the updated query
         this.query = query;
         if(this.requestTimeout) clearTimeout(this.requestTimeout);

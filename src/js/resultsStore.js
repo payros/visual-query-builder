@@ -16,9 +16,9 @@ class ResultsStore extends EventEmitter {
     setTimeout(() => { this.emit("results-fetched") }) // Avoids dispatcher invariant issues
   }
 
-  setError(errorLog) {
-    this.errorLog = errorLog
-    this.emit("results-error")
+  setError(error) {
+    this.errorLog = error.msg
+    this.emit("results-error", error.pos-1)
   }
 
   getResults() {

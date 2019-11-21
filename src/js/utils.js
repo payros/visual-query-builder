@@ -6,7 +6,38 @@ function node_walk(node, func) {
   for(node = node.firstChild; result !== false && node; node = node.nextSibling)
     result = node_walk(node, func);
   return result;
-};
+}
+
+function createRange(node, chars, range) {
+  if (!range) {
+      range = document.createRange()
+      range.selectNode(node);
+      range.setStart(node, 0);
+  }
+
+  if (chars.count === 0) {
+      range.setEnd(node, chars.count);
+  } else if (node && chars.count >0) {
+      if (node.nodeType === Node.TEXT_NODE) {
+          if (node.textContent.length < chars.count) {
+              chars.count -= node.textContent.length;
+          } else {
+              range.setEnd(node, chars.count);
+              chars.count = 0;
+          }
+      } else {
+         for (var lp = 0; lp < node.childNodes.length; lp++) {
+              range = createRange(node.childNodes[lp], chars, range);
+
+              if (chars.count === 0) {
+                  break;
+              }
+          }
+      }
+  }
+
+  return range;
+}
 
 export default  {
     objByIdx:(arr, val, prop) => {
@@ -67,6 +98,18 @@ export default  {
       if(cum_length[0] <= cum_length[1])
         return cum_length;
       return [cum_length[1], cum_length[0]];
+    },
+    setCaretPosition:(elem, pos) => {
+        if (pos >= 0) {
+            let selection = window.getSelection();
+            let range = createRange(elem.parentNode, { count: pos+1 });
+
+            if (range) {
+                range.collapse(false);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+        }
     },
     //Filter an array by a value matching certain properties
     filterByProps:(arr, val, props) => arr.filter(o => props.reduce((bool,prop) => bool = bool || (o[prop] && o[prop].toLowerCase().indexOf(val.toLowerCase()) > -1), false)),

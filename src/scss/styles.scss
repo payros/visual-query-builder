@@ -428,6 +428,16 @@ sidebar {
 			outline:none;
 		}
 
+		.error {
+			background: rgba($secondary-dark, 0.5);
+			display: inline-block;
+		}
+
+		.warning {
+			background: rgba($accent, 0.5);
+			display: inline-block;
+		}
+
 		.clause {
 			border-radius: 5px;
 				padding: 2px 5px;

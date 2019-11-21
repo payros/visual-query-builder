@@ -28,10 +28,10 @@ app.get('/query', (req, res) => {
 		pool.query(constructedQuery).then(rs => {
 			res.json(rs.rows)
 		}).catch(e => {
-			res.status(500).send(e.message.replace(' at or near "LIMIT"', ''))
+			res.status(500).send({pos:e.position, msg:e.message.replace(' at or near "LIMIT"', '')})
 		})
 	} else {
-		res.status(500).send("This query is not supported")
+		res.status(500).send({pos:1, msg:"This query is not supported"})
 	}
 
 });

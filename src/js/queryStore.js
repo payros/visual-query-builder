@@ -11,7 +11,7 @@ class QueryStore extends EventEmitter {
     super()
     this.query = null
     this.errorLog = ""
-    this.errorPos = -1
+    this.errorPos = null
 
     schemaStore.on("filtering-toggled", () => {
       const isFilteringChecked = schemaStore.getFiltering()
@@ -46,8 +46,10 @@ class QueryStore extends EventEmitter {
   }
 
   setError(errorLog) {
+    const posMatch = errorLog.match(/(-*)\^/)
+    const errorPos = posMatch === null ? query.length : posMatch[1].length
     this.errorLog = errorLog.substring(0, errorLog.indexOf("Expecting")).replace(/\son\sline\s[0-9]+/i, '').replace(/-*\^/, '').toLowerCase()
-    this.emit("parse-error")
+    this.emit("parse-error", errorPos)
   }
 
   getErrorLog() {
@@ -152,18 +154,42 @@ class QueryStore extends EventEmitter {
     return this.query ? parser.stringify(this.query).trim() : ""
   }
 
+  getErrorHTML(str, errorClass, errorPos){
+    let query = typeof str === "undefined" ?  this.getQueryString() : str
+    errorPos = errorPos > query.length ? 0 : errorPos
+    //Add error tags and return
+    let errorQuery = query.substring(0, errorPos).replace(/\s/g, '&nbsp;') + '<span class="' + errorClass + '">' + query.substring(errorPos).replace(/\s/g, '&nbsp;')
+    return '<p>' + errorQuery + '</span></p>'
+  }
+
   getQueryHTML(str) {
     let selectKeyword, selectClause, fromKeyword, fromClause
     let optionalClauses = [{},{},{},{}]
     let query = typeof str === "undefined" ?  this.getQueryString() : str
+    let queryTree = null
     // console.log("INPUT STRING:", query)
 
-    //Escape any spaces
+    //Is there a query?
+    if(query.length === 0) return '<p></p>'
+
+    // Is the query parsable?
+    try {
+        queryTree = parser.parse(query)
+    // If not parsable, just return an error
+    } catch(error) {
+        this.setError(error.message)
+        const posMatch = error.message.match(/(-*)\^/)
+        const errorPos = posMatch === null ? query.length : posMatch[1].length
+        return this.getErrorHTML(query, "warning", errorPos)
+    }
+
+    // Escape Spaces
     let escapedQuery = query.replace(/\s/g, '&nbsp;')
 
     // I should get an automatic A just for coming up with this RegEx...
     const queryMatch = escapedQuery.match(/(select)(.*?)(from)(?:(.*?)(where|group(?:&nbsp;)+by|order(?:&nbsp;)+by)|(.*))(?:(.*?)(group(?:&nbsp;)+by|having|order(?:&nbsp;)+by)|(.*))(?:(.*?)(having|order(?:&nbsp;)+by)|(.*))(?:(.*?)(order(?:&nbsp;)+by)|(.*))(.*)/i);
 
+    // Is this a valid SQL query based on the regex?
     if(queryMatch === null) return '<p>' + escapedQuery + '</p>' // No matches... this is not a valid sql query, so just return it
 
     //First let's color the keywords
@@ -179,9 +205,8 @@ class QueryStore extends EventEmitter {
       optional.clause =  queryMatch[9+offset] ? queryMatch[9+offset] : queryMatch[7+offset] ? queryMatch[7+offset] : '';
     })
 
-    // Now let's try to color the columns
-    try {
-        const queryTree = parser.parse(query)
+    // Now let's add color the columns
+    if(queryTree) {
         //First parse the query and get the raw columns
         let currColumns = ast.getRawColumns(queryTree, [])
         // Now join regular columns with expanded columns
@@ -194,10 +219,6 @@ class QueryStore extends EventEmitter {
         optionalClauses.forEach((optional, i) => {
           optional.clause = optional.clause.replace(colRegex, '<span class="column ' + optional.class + '">$1</span>');
         })
-
-    } catch(error) {
-      this.setError(error.message)
-      console.error("PARSE ERROR", error.message)
     }
 
     //Finally, let's color the aggregate functions
@@ -207,6 +228,7 @@ class QueryStore extends EventEmitter {
     optionalClauses.forEach((optional, i) => {
       optional.clause = optional.clause.replace(funcRegex, ($0, $1, $2, $3) => '<span class="function group-by">' + $1.toUpperCase() + $2 + '</span>' + $3);
     })
+
     let html = '<p>' + selectKeyword + selectClause + fromKeyword + fromClause + optionalClauses.reduce((str, opt) => str + opt.keyword + opt.clause,'') + '</p>'
     // console.log("OUTPUT HTML:", html)
     return html
