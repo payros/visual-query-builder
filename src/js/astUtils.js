@@ -395,6 +395,9 @@ astUtils.removeAllGrouping = function(tree){
 
     //First, unwrap every column in the list columns
     let newColumns = astUtils.getColumns(newTree, [], true).map(unwrapAggregateColumn)
+    const currTables = astUtils.getTables(newTree, [])
+    //Convert to * optimized column list
+    newColumns = colsToStar(newColumns, currTables)
 
     //Then, Add the unwrapped columns to the newTree
     newTree.value.selectItems.value = newColumns.map(mapColString)
@@ -404,6 +407,10 @@ astUtils.removeAllGrouping = function(tree){
 
     //Finally, set having to null
     newTree.value.having = null
+
+    if(newTree.value.where === null && schemaStore.getFiltering()){
+      dispatcher.dispatch({ type:"TOGGLE_FILTERING", checked:false })
+    }
 
     return newTree
 }

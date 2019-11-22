@@ -38,7 +38,7 @@ class SqlForm extends React.Component {
         })
 
         resultsStore.on("results-error", (errorPos) => {
-            this.safelyUpdateHTML(queryStore.getErrorHTML(undefined, "error", errorPos))
+            this.safelyUpdateHTML(queryStore.getErrorHTML(this.query, "error", errorPos))
             // this.setState({placeholder:this.query.length ? ">" : "> Type SQL Query"})
          })
     }

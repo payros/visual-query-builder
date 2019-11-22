@@ -11,7 +11,6 @@ class QueryStore extends EventEmitter {
     super()
     this.query = null
     this.errorLog = ""
-    this.errorPos = null
 
     schemaStore.on("filtering-toggled", () => {
       const isFilteringChecked = schemaStore.getFiltering()
@@ -134,8 +133,17 @@ class QueryStore extends EventEmitter {
   parseQuery(queryStr){
     try {
       this.query = queryStr.length ? parser.parse(queryStr) : null
-      console.log(this.query)
-      this.errorPos = -1;
+      if(this.query.value.where === null && this.query.value.having === null && schemaStore.getFiltering()) {
+        dispatcher.dispatch({ type:"TOGGLE_FILTERING", checked:false })
+      }
+
+      if(this.query.value.groupBy === null && schemaStore.getGrouping()) {
+        dispatcher.dispatch({ type:"TOGGLE_GROUPING", checked:false })
+      }
+
+      if(this.query.value.orderBy === null && schemaStore.getOrdering()) {
+        dispatcher.dispatch({ type:"TOGGLE_ORDERING", checked:false })
+      }
       this.emit("query-parsed");
       return true
     } catch(error){
@@ -213,11 +221,10 @@ class QueryStore extends EventEmitter {
         currColumns = ast.getColumns(queryTree, currColumns, true)
         //Finally, turn it into a string that can be used in the regex
         currColumns = currColumns.reduce((str, c) => str + "|" + c,  "").substring(1).replace('*', '\\*')
-
         let colRegex = new RegExp('(' + currColumns + ')', 'gi')
-        selectClause = selectClause.replace(colRegex, '<span class="column select">$1</span>');
+        selectClause = selectClause.replace(/&nbsp;/g, ' ').replace(colRegex, ($0, $1) => '<span class="column select">' + $1.replace(/\s/g, '&nbsp;') + '</span>');
         optionalClauses.forEach((optional, i) => {
-          optional.clause = optional.clause.replace(colRegex, '<span class="column ' + optional.class + '">$1</span>');
+          optional.clause = optional.clause.replace(/&nbsp;/g, ' ').replace(colRegex, ($0, $1) => '<span class="column ' + optional.class + '">' + $1.replace(/\s/g, '&nbsp;') + '</span>');
         })
     }
 

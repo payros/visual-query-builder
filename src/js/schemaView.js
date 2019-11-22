@@ -53,7 +53,7 @@ class SchemaView extends React.Component {
         	dispatcher.dispatch({
             	type:toggleType,
             	checked:this.state[key]
-            })
+          })
         })
     }
 
