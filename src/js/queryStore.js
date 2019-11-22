@@ -46,7 +46,7 @@ class QueryStore extends EventEmitter {
 
   setError(errorLog) {
     const posMatch = errorLog.match(/(-*)\^/)
-    const errorPos = posMatch === null ? query.length : posMatch[1].length
+    const errorPos = posMatch === null ? 0 : posMatch[1].length
     this.errorLog = errorLog.substring(0, errorLog.indexOf("Expecting")).replace(/\son\sline\s[0-9]+/i, '').replace(/-*\^/, '').toLowerCase()
     this.emit("parse-error", errorPos)
   }
@@ -94,8 +94,8 @@ class QueryStore extends EventEmitter {
     setTimeout(() => { this.emit("query-updated") })  // Avoids dispatcher invariant issues
   }
 
-  groupColumn(colIdx, func){
-    this.query = ast.addGroupByColumn(this.query, colIdx, func)
+  groupColumn(colIdx, func, colType){
+    this.query = ast.addGroupByColumn(this.query, colIdx, func, colType)
     setTimeout(() => { this.emit("query-updated") })  // Avoids dispatcher invariant issues
   }
 
@@ -133,16 +133,17 @@ class QueryStore extends EventEmitter {
   parseQuery(queryStr){
     try {
       this.query = queryStr.length ? parser.parse(queryStr) : null
-      if(this.query.value.where === null && this.query.value.having === null && schemaStore.getFiltering()) {
-        dispatcher.dispatch({ type:"TOGGLE_FILTERING", checked:false })
-      }
 
-      if(this.query.value.groupBy === null && schemaStore.getGrouping()) {
-        dispatcher.dispatch({ type:"TOGGLE_GROUPING", checked:false })
-      }
-
-      if(this.query.value.orderBy === null && schemaStore.getOrdering()) {
-        dispatcher.dispatch({ type:"TOGGLE_ORDERING", checked:false })
+      if(this.query !== null){
+        const isWrapped = ast.getColumns(this.query, [], true).reduce((anyWrapped, colStr) => {
+          const funcMatch = colStr.match(/([a-zA-Z]+)\((.+)\)/)
+          const currWrapped = (funcMatch !== null && ['avg', 'sum', 'min', 'max', 'count'].indexOf(funcMatch[1].toLowerCase()) > -1)
+          return anyWrapped || currWrapped
+        }, false)
+        const isGrouped = isWrapped || this.query.value.groupBy !== null
+        if(!isGrouped && schemaStore.getGrouping()) {
+          dispatcher.dispatch({ type:"TOGGLE_GROUPING", checked:false })
+        }
       }
       this.emit("query-parsed");
       return true
@@ -195,7 +196,7 @@ class QueryStore extends EventEmitter {
     let escapedQuery = query.replace(/\s/g, '&nbsp;')
 
     // I should get an automatic A just for coming up with this RegEx...
-    const queryMatch = escapedQuery.match(/(select)(.*?)(from)(?:(.*?)(where|group(?:&nbsp;)+by|order(?:&nbsp;)+by)|(.*))(?:(.*?)(group(?:&nbsp;)+by|having|order(?:&nbsp;)+by)|(.*))(?:(.*?)(having|order(?:&nbsp;)+by)|(.*))(?:(.*?)(order(?:&nbsp;)+by)|(.*))(.*)/i);
+    const queryMatch = escapedQuery.match(/(select)(.*?)(from)(?:(.*?)(where|group(?:&nbsp;)+by|having|order(?:&nbsp;)+by)|(.*))(?:(.*?)(group(?:&nbsp;)+by|having|order(?:&nbsp;)+by)|(.*))(?:(.*?)(having|order(?:&nbsp;)+by)|(.*))(?:(.*?)(order(?:&nbsp;)+by)|(.*))(.*)/i);
 
     // Is this a valid SQL query based on the regex?
     if(queryMatch === null) return '<p>' + escapedQuery + '</p>' // No matches... this is not a valid sql query, so just return it
@@ -260,7 +261,7 @@ class QueryStore extends EventEmitter {
           break
 
         case "GROUP_COLUMN":
-          this.groupColumn(action.column, action.func)
+          this.groupColumn(action.column, action.func, action.colType)
           break
 
         case "ORDER_COLUMN":

@@ -50,13 +50,13 @@ class SqlForm extends React.Component {
         }
     }
 
-    handleEvents(ev){
-        switch(ev.type){
-            case "COLUMN_DROP":
-                this.handleDrop(ev.column)
-                break
-        }
-    }
+    // handleEvents(ev){
+    //     switch(ev.type){
+    //         case "COLUMN_DROP":
+    //             this.handleDrop(ev.column)
+    //             break
+    //     }
+    // }
 
     safelyUpdateHTML(html) {
         const positions = Utils.getCaretPosition(this.refs.inputbox.el.current)

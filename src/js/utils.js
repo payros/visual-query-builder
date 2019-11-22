@@ -49,11 +49,21 @@ export default  {
     isEqualJSON:(a,b) => {
       return JSON.stringify(a) === JSON.stringify(b)
     },
-    getTypeFromHeader:(headerStr, allColumns) => {
+    getTypeFromHeader:(headerStr, allColumns, isFiltering) => {
         const funcMatch = headerStr.match(/([a-zA-Z]+)\((.+)\)/)
-        //The column is wrapped in an aggregator function which turn it into an integer
-        if(funcMatch && ['avg', 'sum', 'min', 'max', 'count'].indexOf(funcMatch[1].toLowerCase()) > -1) return "integer"
+        //The column is wrapped in an aggregator function
+        if(funcMatch && ['avg', 'sum', 'min', 'max', 'count'].indexOf(funcMatch[1].toLowerCase()) > -1){
+          // For filtering turn it into an integer
+          if(isFiltering){
+            return "integer"
+          // For grouping, unwrap
+          } else {
+            headerStr = funcMatch[2]
+          }
+        }
+
         let headerObjs = allColumns.filter(c => c.name === headerStr)
+        console.log(headerStr, headerObjs)
         return headerObjs.length && headerObjs[0].type === "integer" ? "integer" : "string"
     },
     getStringFromHTML:(html) => {

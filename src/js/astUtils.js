@@ -288,7 +288,6 @@ astUtils.removeAllOrderByColumns = function(tree) {
 
 astUtils.getOrderByColumnIdx = function(tree, colIdx) {
     if(tree === null || tree.value.orderBy == null) return {order:null, sort:null}
-    console.log("columns:", astUtils.getColumns(tree, [], true), "colIdx:", colIdx)
     const colName = astUtils.getColumns(tree, [], true)[colIdx].toLowerCase()
     const sortObjs = tree.value.orderBy.value.reduce((arr, c, i) => {
       if(funcToString(c.value).toLowerCase() === colName) arr.push({order:i, sort:c.sortOpt})
@@ -301,11 +300,119 @@ astUtils.getOrderByColumnIdx = function(tree, colIdx) {
 
 
 
+/* ------- WHERE FUNCTIONS ------- */
+
+//adds AND ${column} ${operator} ${val} to end of WHERE clause
+/**
+examples:
+astUtils.where(tree, "actual_time", ">=", 178) //adds actual_time>=178 to end of where
+astUtils.where(tree, "dest_city", "=", "'denver'") note how the string needs to include '' inside
+astUtils.where(tree, "arrival_delay", "<", 31)
+**/
+astUtils.addWhereColumn = function(tree, column, operator, val) {
+    let newTree = JSON.parse(JSON.stringify(tree))
+    const clause = useHaving(column) ? 'having': 'where'
+    let node = newTree.value[clause]
+    let valType = typeof val
+    valType = valType.charAt(0).toUpperCase() + valType.substring(1) //Uppercase first letter
+    let nodeType = operator.toUpperCase() === "LIKE" ? "LikePredicate" : "ComparisonBooleanPrimary"
+    let newNode =  {
+        left:{type: "Identifier", value: column},
+        right:{type: valType, value: val},
+        type:nodeType
+    }
+    //We only need the operator if it's not 'like'
+    if(operator.toUpperCase() !== "LIKE") newNode.operator = operator
+
+    //Node is null only if where is empty
+    if(node == null) {
+        newTree.value[clause] = newNode
+    //Append to the current where clause
+    } else {
+        let prev = null
+        //keep recursing until the left leaf of the current node is an identifier (we reached the bottom of the tree)
+        //the one previous to it needs to be changed
+        do {
+            prev = node
+            node = node.right
+        } while(node.left && node.left.type == "Identifier")
+
+        //deep copy of prev into prev.left
+        prev.left = JSON.parse(JSON.stringify(prev))
+        prev.right = newNode
+        //the high level operator needs to be AND
+        prev.operator = 'AND'
+        prev.type = 'AndExpression'
+    }
+
+
+    return newTree
+}
+
+//Remove where clause (or clauses) that match a certain column
+//Returns a new copy of the tree (it does not modify the original)
+astUtils.removeWhereColumn = function(tree, column, operator) {
+    const targetType = operator.toUpperCase() === "LIKE" ? "LikePredicate" : "ComparisonBooleanPrimary"
+    const clause = useHaving(column) ? 'having': 'where'
+    let newTree = JSON.parse(JSON.stringify(tree))
+    newTree.value[clause] = recurse(newTree.value[clause])
+    return newTree
+
+    function recurse(node){
+        if(!node) return node
+        const nodeType = node.type
+        switch(nodeType){
+            case 'AndExpression':
+            case 'OrExpression':
+                if(node.left.type === targetType && (node.left.left.value === column || funcToString(node.left.left) == column)) {
+                    node = node.right
+                } else if(node.right.type === targetType && (node.right.left.value === column || funcToString(node.right.left) == column)){
+                    node = node.left
+                } else {
+                    node.left = recurse(node.left)
+                    node.right = recurse(node.right)
+                }
+                break
+            default:
+                node = node.type === targetType && (node.left.value === column || funcToString(node.left) == column) ? null : node
+        }
+        return node
+    }
+}
+
+
+astUtils.getWhereColumn = function(tree, column, colType) {
+    if(tree === null) return null
+    const clause = useHaving(column) ? 'having': 'where'
+    const targetType = colType !== "integer" ? "LikePredicate" : "ComparisonBooleanPrimary"
+    return recurse(tree.value[clause])
+
+    function recurse(node){
+        if(!node) return null
+        const nodeType = node.type
+        switch(nodeType){
+          case 'AndExpression':
+          case 'OrExpression':
+            return recurse(node.left) || recurse(node.right)
+          default:
+            if(nodeType === targetType &&
+              (node.left && node.left.type === "Identifier" && node.left.value == column ||
+               node.left && node.left.type === "FunctionCall" && funcToString(node.left) == column)) {
+                return node
+            } else {
+                return null
+            }
+        }
+    }
+}
+
+
+
 
 /* ------- GROUP BY FUNCTIONS ------- */
 
 // Adds (or removes if func === "") a function from the selected column index  and adds (or removes if func !== "") the column in the the groupBy clause
-astUtils.addGroupByColumn = function(tree, colIdx, func){
+astUtils.addGroupByColumn = function(tree, colIdx, func, colType){
     if(tree === null) return tree
     let newTree = JSON.parse(JSON.stringify(tree))
     let columns = astUtils.getColumns(newTree, [], true)
@@ -327,9 +434,20 @@ astUtils.addGroupByColumn = function(tree, colIdx, func){
           newTree.value.orderBy.value[columnOrder.order].value = mapColString(func + "(" + colName + ")", true)
         }
 
+        // Check if the column exists in the whereClause. If so, move it to the "having" clause
+        const whereNode = astUtils.getWhereColumn(newTree, colName, colType)
+        if(whereNode !== null){
+          const op = whereNode.type == "LikePredicate" ? "like" : whereNode.operator
+          newTree = astUtils.removeWhereColumn(newTree, colName, op)
+          if(op !== "like"){
+            newTree = astUtils.addWhereColumn(newTree, func + "(" + colName + ")", op, whereNode.right.value)
+          }
+        }
+
     // We're removing an aggregate function
     } else {
         const funcMatch = columns[colIdx].match(/([a-zA-Z]+)\((.+)\)$/)
+        const fullName = columns[colIdx]
         columns[colIdx] = funcMatch[2]
 
         // Add the column from the group by array
@@ -339,6 +457,16 @@ astUtils.addGroupByColumn = function(tree, colIdx, func){
         //Also, unwrap the orderBy column if present
         if(columnOrder.order !== null) {
           newTree.value.orderBy.value[columnOrder.order].value.value = funcMatch[2]
+        }
+
+        // Check if the column exists in the having. If so, move it to the where clause
+        const havingNode = astUtils.getWhereColumn(newTree, fullName, "integer")
+        if(havingNode !== null){
+          const op = havingNode.type == "LikePredicate" ? "like" : havingNode.operator
+          newTree = astUtils.removeWhereColumn(newTree, fullName, op)
+          if(colType === "integer"){
+            newTree = astUtils.addWhereColumn(newTree, funcMatch[2], op, havingNode.right.value)
+          }
         }
     }
 
@@ -366,6 +494,7 @@ astUtils.removeGroupByColumn = function(tree, col){
 
 // Returns a new tree with all select columns in the groupBy clause, unless they are wrapped
 astUtils.addAllGrouping = function(tree){
+    const allColumns = Object.keys(schema).reduce((arr, table) => arr.concat(schema[table]), [])
     let newTree = JSON.parse(JSON.stringify(tree))
     let columns = astUtils.getColumns(newTree, [], true)
 
@@ -407,10 +536,6 @@ astUtils.removeAllGrouping = function(tree){
 
     //Finally, set having to null
     newTree.value.having = null
-
-    if(newTree.value.where === null && schemaStore.getFiltering()){
-      dispatcher.dispatch({ type:"TOGGLE_FILTERING", checked:false })
-    }
 
     return newTree
 }
@@ -522,114 +647,6 @@ astUtils.removeJoinTable = function(tree, table) {
         return node
     }
 
-}
-
-
-
-/* ------- WHERE FUNCTIONS ------- */
-
-//adds AND ${column} ${operator} ${val} to end of WHERE clause
-/**
-examples:
-astUtils.where(tree, "actual_time", ">=", 178) //adds actual_time>=178 to end of where
-astUtils.where(tree, "dest_city", "=", "'denver'") note how the string needs to include '' inside
-astUtils.where(tree, "arrival_delay", "<", 31)
-**/
-astUtils.addWhereColumn = function(tree, column, operator, val) {
-    let newTree = JSON.parse(JSON.stringify(tree))
-    const clause = useHaving(column) ? 'having': 'where'
-    let node = newTree.value[clause]
-    let valType = typeof val
-    valType = valType.charAt(0).toUpperCase() + valType.substring(1) //Uppercase first letter
-    let nodeType = operator.toUpperCase() === "LIKE" ? "LikePredicate" : "ComparisonBooleanPrimary"
-    let newNode =  {
-        left:{type: "Identifier", value: column},
-        right:{type: valType, value: val},
-        type:nodeType
-    }
-    //We only need the operator if it's not 'like'
-    if(operator.toUpperCase() !== "LIKE") newNode.operator = operator
-
-    //Node is null only if where is empty
-    if(node == null) {
-        newTree.value[clause] = newNode
-    //Append to the current where clause
-    } else {
-        let prev = null
-        //keep recursing until the left leaf of the current node is an identifier (we reached the bottom of the tree)
-        //the one previous to it needs to be changed
-        do {
-            prev = node
-            node = node.right
-        } while(node.left && node.left.type == "Identifier")
-
-        //deep copy of prev into prev.left
-        prev.left = JSON.parse(JSON.stringify(prev))
-        prev.right = newNode
-        //the high level operator needs to be AND
-        prev.operator = 'AND'
-        prev.type = 'AndExpression'
-    }
-
-
-    return newTree
-}
-
-//Remove where clause (or clauses) that match a certain column
-//Returns a new copy of the tree (it does not modify the original)
-astUtils.removeWhereColumn = function(tree, column, operator) {
-    const targetType = operator.toUpperCase() === "LIKE" ? "LikePredicate" : "ComparisonBooleanPrimary"
-    const clause = useHaving(column) ? 'having': 'where'
-    let newTree = JSON.parse(JSON.stringify(tree))
-    newTree.value[clause] = recurse(newTree.value[clause])
-    return newTree
-
-    function recurse(node){
-        if(!node) return node
-        const nodeType = node.type
-        switch(nodeType){
-            case 'AndExpression':
-            case 'OrExpression':
-                if(node.left.type === targetType && (node.left.left.value === column || funcToString(node.left.left) == column)) {
-                    node = node.right
-                } else if(node.right.type === targetType && (node.right.left.value === column || funcToString(node.right.left) == column)){
-                    node = node.left
-                } else {
-                    node.left = recurse(node.left)
-                    node.right = recurse(node.right)
-                }
-                break
-            default:
-                node = node.type === targetType && (node.left.value === column || funcToString(node.left) == column) ? null : node
-        }
-        return node
-    }
-}
-
-
-astUtils.getWhereColumn = function(tree, column, colType) {
-    if(tree === null) return null
-    const clause = useHaving(column) ? 'having': 'where'
-    const targetType = colType !== "integer" ? "LikePredicate" : "ComparisonBooleanPrimary"
-    return recurse(tree.value[clause])
-
-    function recurse(node){
-        if(!node) return null
-        const nodeType = node.type
-        switch(nodeType){
-          case 'AndExpression':
-          case 'OrExpression':
-            return recurse(node.left) || recurse(node.right)
-          default:
-            if(nodeType === targetType &&
-              (node.left && node.left.type === "Identifier" && node.left.value == column ||
-               node.left && node.left.type === "FunctionCall" && funcToString(node.left) == column)) {
-                return node
-            } else {
-                return null
-            }
-        }
-    }
 }
 
 

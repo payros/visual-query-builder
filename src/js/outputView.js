@@ -101,9 +101,9 @@ class ResultsTable extends React.Component {
 		const schema = schemaStore.getSchema()
 		const allColumns = Object.keys(schema).reduce((arr, table) => arr.concat(schema[table]), [])
 		const headerCells = this.state.headers.map((col, idx) => <FlexCell className="column-remove-btn" onClick={() => this.handleRemoveColumn(idx)} >{col}</FlexCell>)
-		const filterCells = this.state.headers.map(headerStr => <FilterCell column={{name:headerStr, type:Utils.getTypeFromHeader(headerStr, allColumns)}}/>)
-		const groupCells = this.state.headers.map((headerStr, idx) => <GroupCell idx={idx} column={{name:headerStr, type:Utils.getTypeFromHeader(headerStr, allColumns)}}/>)
-		const orderCells = this.state.headers.map((headerStr, idx) => <OrderCell idx={idx} colNum={this.state.headers.length} column={{name:headerStr, type:Utils.getTypeFromHeader(headerStr, allColumns)}}/>)
+		const filterCells = this.state.headers.map(headerStr => <FilterCell column={{name:headerStr, type:Utils.getTypeFromHeader(headerStr, allColumns, true)}}/>)
+		const groupCells = this.state.headers.map((headerStr, idx) => <GroupCell idx={idx} column={{name:headerStr, type:Utils.getTypeFromHeader(headerStr, allColumns, false)}}/>)
+		const orderCells = this.state.headers.map((headerStr, idx) => <OrderCell idx={idx} colNum={this.state.headers.length} column={{name:headerStr, type:Utils.getTypeFromHeader(headerStr, allColumns, false)}}/>)
     const showMsg = !this.state.loading && !resultsStore.getShowTable();
 
     return  <Paper>
@@ -192,7 +192,8 @@ class GroupCell extends React.Component {
             dispatcher.dispatch({
             	type:'GROUP_COLUMN',
             	column:this.props.idx,
-            	func:this.state.func
+            	func:this.state.func,
+              colType:this.props.column.type
             })
         })
     }
