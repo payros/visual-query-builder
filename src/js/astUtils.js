@@ -494,6 +494,7 @@ astUtils.removeGroupByColumn = function(tree, col){
 
 // Returns a new tree with all select columns in the groupBy clause, unless they are wrapped
 astUtils.addAllGrouping = function(tree){
+    const schema = schemaStore.getSchema()
     const allColumns = Object.keys(schema).reduce((arr, table) => arr.concat(schema[table]), [])
     let newTree = JSON.parse(JSON.stringify(tree))
     let columns = astUtils.getColumns(newTree, [], true)

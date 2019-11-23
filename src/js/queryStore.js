@@ -176,7 +176,7 @@ class QueryStore extends EventEmitter {
     let optionalClauses = [{},{},{},{}]
     let query = typeof str === "undefined" ?  this.getQueryString() : str
     let queryTree = null
-    // console.log("INPUT STRING:", query)
+    console.log("INPUT STRING:", query)
 
     //Is there a query?
     if(query.length === 0) return '<p></p>'
@@ -223,22 +223,22 @@ class QueryStore extends EventEmitter {
         //Finally, turn it into a string that can be used in the regex
         currColumns = currColumns.reduce((str, c) => str + "|" + c,  "").substring(1).replace('*', '\\*')
         let colRegex = new RegExp('(' + currColumns + ')', 'gi')
-        selectClause = selectClause.replace(/&nbsp;/g, ' ').replace(colRegex, ($0, $1) => '<span class="column select">' + $1.replace(/\s/g, '&nbsp;') + '</span>');
+        selectClause = selectClause.replace(/&nbsp;/g, ' ').replace(colRegex, '<span class="column select">$1</span>').replace(/\s(?![^<]*>)/g, '&nbsp;');
         optionalClauses.forEach((optional, i) => {
-          optional.clause = optional.clause.replace(/&nbsp;/g, ' ').replace(colRegex, ($0, $1) => '<span class="column ' + optional.class + '">' + $1.replace(/\s/g, '&nbsp;') + '</span>');
+          optional.clause = optional.clause.replace(/&nbsp;/g, ' ').replace(colRegex, '<span class="column ' + optional.class + '">$1</span>').replace(/\s(?![^<]*>)/g, '&nbsp;');
         })
     }
 
     //Finally, let's color the aggregate functions
     let funcRegex = /(count|min|max|avg|sum)(\(.*?\))(&nbsp;|,)/gi
-
+    console.log(selectClause,selectClause.match(funcRegex))
     selectClause = selectClause.replace(funcRegex, ($0, $1, $2, $3) => '<span class="function group-by">' + $1.toUpperCase() + $2 + '</span>' + $3);
     optionalClauses.forEach((optional, i) => {
       optional.clause = optional.clause.replace(funcRegex, ($0, $1, $2, $3) => '<span class="function group-by">' + $1.toUpperCase() + $2 + '</span>' + $3);
     })
 
     let html = '<p>' + selectKeyword + selectClause + fromKeyword + fromClause + optionalClauses.reduce((str, opt) => str + opt.keyword + opt.clause,'') + '</p>'
-    // console.log("OUTPUT HTML:", html)
+    console.log("OUTPUT HTML:", html)
     return html
   }
 

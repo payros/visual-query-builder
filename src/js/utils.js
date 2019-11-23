@@ -63,7 +63,6 @@ export default  {
         }
 
         let headerObjs = allColumns.filter(c => c.name === headerStr)
-        console.log(headerStr, headerObjs)
         return headerObjs.length && headerObjs[0].type === "integer" ? "integer" : "string"
     },
     getStringFromHTML:(html) => {
