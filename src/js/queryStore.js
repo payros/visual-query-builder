@@ -61,6 +61,7 @@ class QueryStore extends EventEmitter {
 
     if(!this.query){
       this.query = parser.parse("SELECT " + column + " FROM " + table)
+      if(schemaStore.getGrouping()) this.query = ast.addAllGrouping(this.query)
     } else {
       const currTables = ast.getTables(this.query, [])
       const currColumns = ast.getColumns(this.query, [], false) //return all the column names (unwrapped)
@@ -176,7 +177,7 @@ class QueryStore extends EventEmitter {
     let optionalClauses = [{},{},{},{}]
     let query = typeof str === "undefined" ?  this.getQueryString() : str
     let queryTree = null
-    console.log("INPUT STRING:", query)
+    // console.log("INPUT STRING:", query)
 
     //Is there a query?
     if(query.length === 0) return '<p></p>'
@@ -231,14 +232,13 @@ class QueryStore extends EventEmitter {
 
     //Finally, let's color the aggregate functions
     let funcRegex = /(count|min|max|avg|sum)(\(.*?\))(&nbsp;|,)/gi
-    console.log(selectClause,selectClause.match(funcRegex))
     selectClause = selectClause.replace(funcRegex, ($0, $1, $2, $3) => '<span class="function group-by">' + $1.toUpperCase() + $2 + '</span>' + $3);
     optionalClauses.forEach((optional, i) => {
       optional.clause = optional.clause.replace(funcRegex, ($0, $1, $2, $3) => '<span class="function group-by">' + $1.toUpperCase() + $2 + '</span>' + $3);
     })
 
     let html = '<p>' + selectKeyword + selectClause + fromKeyword + fromClause + optionalClauses.reduce((str, opt) => str + opt.keyword + opt.clause,'') + '</p>'
-    console.log("OUTPUT HTML:", html)
+    // console.log("OUTPUT HTML:", html)
     return html
   }
 
