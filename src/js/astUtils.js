@@ -656,7 +656,7 @@ astUtils.removeJoinTable = function(tree, table) {
 
 
 astUtils.addSelectColumn = function(tree, column, table) {
-    let newTree = Object.assign({}, tree)
+    let newTree = JSON.parse(JSON.stringify(tree))
     if(column === "*") column = table + "." + column
 
     //Push the new column into the tree
@@ -665,9 +665,6 @@ astUtils.addSelectColumn = function(tree, column, table) {
     //Get current state
     const currColumns = astUtils.getColumns(newTree, [], true) //Wrap function. We need to diferentiate between functions and regular columns
     const currTables = astUtils.getTables(newTree, [table]) //Include the table of the column you're adding
-
-    // const colsList = currColumns.filter(c => !c.match(/[a-zA-Z]+\(.+\)/))
-    // const funcList = currColumns.filter(c => c.match(/[a-zA-Z]+\(.+\)/))
 
     //Convert to * optimized column list
     let newColumns = colsToStar(currColumns, currTables)
