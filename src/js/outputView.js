@@ -114,8 +114,8 @@ class ResultsTable extends React.Component {
 					{!showMsg && <FlexTable ref="table">
   												<FlexHead>
   										        	<FlexRow>{headerCells}</FlexRow>
-  										        	{this.state.filteringToggle && <FlexRow>{filterCells}</FlexRow>}
   										        	{this.state.groupingToggle && <FlexRow>{groupCells}</FlexRow>}
+                                {this.state.filteringToggle && <FlexRow>{filterCells}</FlexRow>}
   										        	{this.state.orderingToggle && <FlexRow>{orderCells}</FlexRow>}
   												</FlexHead>
   										        <FlexBody rows={rows}/>

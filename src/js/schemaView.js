@@ -70,8 +70,8 @@ class SchemaView extends React.Component {
         			{content}
         			<h3>Operations</h3>
         			<FormGroup row className="toggles-list">
+							<FormControlLabel label="Grouping" control={<Switch checked={this.state.groupingToggle} onChange={(ev) => this.handleChange(ev)} className="blue" inputProps={{ 'aria-label': 'checkbox', 'name':'groupingToggle' }}/> }/>
 				    	<FormControlLabel label="Filtering" control={<Switch checked={this.state.filteringToggle} onChange={(ev) => this.handleChange(ev)} className="yellow" inputProps={{ 'aria-label': 'checkbox', 'name':'filteringToggle' }}/> }/>
-				    	<FormControlLabel label="Grouping" control={<Switch checked={this.state.groupingToggle} onChange={(ev) => this.handleChange(ev)} className="blue" inputProps={{ 'aria-label': 'checkbox', 'name':'groupingToggle' }}/> }/>
 				    	<FormControlLabel label="Ordering" control={<Switch checked={this.state.orderingToggle} onChange={(ev) => this.handleChange(ev)} className="orange" inputProps={{ 'aria-label': 'checkbox', 'name':'orderingToggle' }}/> }/>
     				</FormGroup>
                 </sidebar>
