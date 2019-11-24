@@ -30,14 +30,14 @@ class FlexTable extends React.Component {
 				//Set Body Height
 				const headerHeight = this.children[0].getRef().clientHeight
 				const tableHeight = this.refs.table.clientHeight
-				this.children[1].setHeight(tableHeight - headerHeight)	
+				this.children[1].setHeight(tableHeight - headerHeight)
 			})
 		}
 
 	}
 
 	render(){
-		return 	<table ref="table" className="flex-table">
+		return 	<table ref="table" className={"flex-table " + this.props.className}>
 					{ this.props.children.map((child, i) => React.cloneElement(React.Children.only(child), { ref: el => this.children[i] = el }) ) }
 				</table>
 	}
@@ -52,11 +52,11 @@ class FlexHead extends React.Component {
 
 	getRef(){
 	     return this.refs.thead;
-	} 
+	}
 
 	setWidth(newWidth){
 		this.setState({ width:newWidth })
-	} 
+	}
 
 	render(){
 		let rows;
@@ -84,11 +84,11 @@ class FlexBody extends React.Component {
 
 	setWidth(newWidth){
 		this.setState({ width:newWidth })
-	} 
+	}
 
 	setHeight(newHeight){
 		this.setState({ height:newHeight })
-	} 
+	}
 
 	render(){
 		let rows;
@@ -107,11 +107,11 @@ class FlexRow extends React.Component {
 	render(){
 		let cells, fontSize;
 		if(this.props.cells && this.props.cells.length){  // Content defined via props
-			fontSize = this.props.cells.length > 10 ? "sm-font" : 
+			fontSize = this.props.cells.length > 10 ? "sm-font" :
 					   this.props.cells.length > 2 ? "md-font" : "lg-font"
 			cells = this.props.cells.map(c => <FlexCell width={this.props.tableWidth/this.props.cells.length} headCell={this.props.headCells}>{c}</FlexCell>)
 		} else if(this.props.children && this.props.children.length) { // Multiple children
-			fontSize = this.props.children.length > 10 ? "sm-font" : 
+			fontSize = this.props.children.length > 10 ? "sm-font" :
 					   this.props.children.length > 2 ? "md-font" : "lg-font"
 			const cellWidth = this.props.tableWidth/this.props.children.length;
 			cells = this.props.children.map(child => React.cloneElement(React.Children.only(child), { headCell:this.props.headCells, width:cellWidth }));
@@ -125,7 +125,7 @@ class FlexRow extends React.Component {
 
 class FlexCell extends React.Component {
 	render(){
-		return 	this.props.headCell ? <th className={"flex-cell " + (this.props.className ? this.props.className : "")} style={{ width:this.props.width }} onClick={this.props.onClick}>{this.props.children}</th> : 
+		return 	this.props.headCell ? <th className={"flex-cell " + (this.props.className ? this.props.className : "")} style={{ width:this.props.width }} onClick={this.props.onClick}>{this.props.children}</th> :
 									  <td className={"flex-cell " + (this.props.className ? this.props.className : "")} style={{ width:this.props.width }} onClick={this.props.onClick}>{this.props.children}</td>
 	}
 }

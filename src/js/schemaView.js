@@ -96,7 +96,7 @@ class ColumnList extends React.Component {
 class ColumnItem extends React.Component {
 	handleDragStart(ev){
 		ev.dataTransfer.setData('column', this.props.table + "." + this.props.column)
-		dispatcher.dispatch({ type:'COLUMN_DRAG_START' })
+		dispatcher.dispatch({ type:'COLUMN_DRAG_START', column:this.props.column })
 	}
 
 	handleDragEnd(){

@@ -194,6 +194,42 @@ sidebar {
 		z-index: 2;
 	}
 
+	table.is-dragging {
+		thead tr:first-child th:last-child {
+			background-color: darken($primary-dark, 10%);
+		}
+
+		tbody {
+			position: relative;
+
+			tr:first-child td:last-child::after {
+					content: "Drop to Add Column";
+			    position: absolute;
+			    top: 0;
+			    right: 0;
+			    height: 100%;
+			    width: inherit;
+			    margin: 0;
+					padding:0 5px;
+
+			    text-align: center;
+			    font-size: 1.2rem;
+			    font-weight: bold;
+			    display: flex;
+			    flex-direction: column;
+			    justify-content: center;
+					box-sizing: border-box;
+
+					background-color:#fff;
+					color: #1b6a7c;
+					opacity:0.8;
+					border: 18px dashed;
+			    outline: 12px solid #fff;
+			    outline-offset: -12px;
+			}
+		}
+	}
+
 	thead {
 		box-shadow: 0 1px 6px rgba(0,0,0,0.2);
     	z-index: 1;

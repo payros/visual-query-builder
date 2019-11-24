@@ -25,7 +25,7 @@ class ResultsTable extends React.Component {
     		results:[],
     	  loading:false,
     		error:false,
-    		dragging:false,
+    		dragging:null,
     		filteringToggle:schemaStore.getFiltering(),
   			groupingToggle:schemaStore.getGrouping(),
   			orderingToggle:schemaStore.getOrdering()
@@ -40,10 +40,10 @@ class ResultsTable extends React.Component {
 			this.setState({error:false, loading:true})
 		})
 		resultsStore.on("results-fetched", () => {
-			this.setState({error:false, loading:false, headers:queryStore.getColumns(), results:resultsStore.getResults()})
+			this.setState({dragging:null, error:false, loading:false, headers:queryStore.getColumns(), results:resultsStore.getResults()})
 		})
 		resultsStore.on("results-error", () => {
-			this.setState({error:true, loading:false})
+			this.setState({dragging:null, error:true, loading:false})
 		})
 		queryStore.on("query-parsed", () => {
 			this.setState({error:false, loading:false})
@@ -70,10 +70,11 @@ class ResultsTable extends React.Component {
 	handleEvents(ev){
         switch(ev.type){
             case "COLUMN_DRAG_START":
-                this.handleDrag(true)
+                this.keepingDragging = false
+                this.handleDrag(ev.column)
                 break
             case "COLUMN_DRAG_END":
-                this.handleDrag(false)
+                if(!this.keepingDragging) this.handleDrag(null)
                 break
         }
     }
@@ -83,12 +84,14 @@ class ResultsTable extends React.Component {
    	}
 
 
-    handleDrag(isDragging){
-    	this.setState({ dragging:isDragging })
+    handleDrag(column){
+    	this.setState({ dragging:column })
     }
 
     handleDrop(ev){
     	const column = ev.dataTransfer.getData('column')
+      this.setState({ dragging:column.split('.')[1] })
+      this.keepingDragging = true
     	dispatcher.dispatch({ type:'COLUMN_DROP', column:column })
     }
 
@@ -97,28 +100,37 @@ class ResultsTable extends React.Component {
     }
 
 	render(){
-		const rows = (this.state.results.length ? this.state.results : []).map(r => this.state.headers.map(h => r[ h.indexOf("(") === -1 ? h : h.substring(0, h.indexOf("(")).toLowerCase()]))
 		const schema = schemaStore.getSchema()
 		const allColumns = Object.keys(schema).reduce((arr, table) => arr.concat(schema[table]), [])
 		const headerCells = this.state.headers.map((col, idx) => <FlexCell className="column-remove-btn" onClick={() => this.handleRemoveColumn(idx)} >{col}</FlexCell>)
-		const filterCells = this.state.headers.map(headerStr => <FilterCell column={{name:headerStr, type:Utils.getTypeFromHeader(headerStr, allColumns, true)}}/>)
 		const groupCells = this.state.headers.map((headerStr, idx) => <GroupCell idx={idx} column={{name:headerStr, type:Utils.getTypeFromHeader(headerStr, allColumns, false)}}/>)
+    const filterCells = this.state.headers.map(headerStr => <FilterCell column={{name:headerStr, type:Utils.getTypeFromHeader(headerStr, allColumns, true)}}/>)
 		const orderCells = this.state.headers.map((headerStr, idx) => <OrderCell idx={idx} colNum={this.state.headers.length} column={{name:headerStr, type:Utils.getTypeFromHeader(headerStr, allColumns, false)}}/>)
-    const showMsg = !this.state.loading && !resultsStore.getShowTable();
+    let rows = (this.state.results.length ? this.state.results : []).map(r => this.state.headers.map(h => r[ h.indexOf("(") === -1 ? h : h.substring(0, h.indexOf("(")).toLowerCase()]))
+    const showMsg = !this.state.dragging && !this.state.loading && !resultsStore.getShowTable();
 
-    return  <Paper>
-					{this.state.dragging && <div className="drop-curtain" onDragOver={this.handleDragOver} onDrop={(ev) => this.handleDrop(ev)}><p>Drop to Add Column to Query</p></div>}
+    if(this.state.dragging){
+      headerCells.push(<FlexCell>{this.state.dragging}</FlexCell>)
+      groupCells.push(<GroupCell column={{name:this.state.dragging, type:Utils.getTypeFromHeader(this.state.dragging, allColumns, false)}}/>)
+      filterCells.push(<FilterCell column={{name:this.state.dragging, type:Utils.getTypeFromHeader(this.state.dragging, allColumns, true)}}/>)
+      orderCells.push(<OrderCell column={{name:this.state.dragging, type:Utils.getTypeFromHeader(this.state.dragging, allColumns, false)}}/>)
+      rows.length ? rows.forEach(r => r.push("")) : rows = [[""]]
+      console.log("rows", rows.length)
+    }
+
+    return  <Paper onDragOver={this.handleDragOver} onDrop={(ev) => this.handleDrop(ev)}>
+					{/*this.state.dragging && <div className="drop-curtain" onDragOver={this.handleDragOver} onDrop={(ev) => this.handleDrop(ev)}><p>Drop to Add Column to Query</p></div>*/}
 					{this.state.loading && <Utils.AjaxLoader/>}
-					<MessageBox show={showMsg} animate={false}/>
-          {!showMsg && !this.state.loading && this.state.results.length === 0 && <p className="empty-msg">No Results</p>}
-					{!showMsg && <FlexTable ref="table">
+					{<MessageBox show={showMsg} animate={false}/>}
+          {!showMsg && !this.state.dragging && !this.state.loading && this.state.results.length === 0 && <p className="empty-msg">No Results</p>}
+					{!showMsg && <FlexTable className={this.state.dragging && !this.keepingDragging ? "is-dragging" : ""} ref="table">
   												<FlexHead>
   										        	<FlexRow>{headerCells}</FlexRow>
   										        	{this.state.groupingToggle && <FlexRow>{groupCells}</FlexRow>}
                                 {this.state.filteringToggle && <FlexRow>{filterCells}</FlexRow>}
   										        	{this.state.orderingToggle && <FlexRow>{orderCells}</FlexRow>}
   												</FlexHead>
-  										        <FlexBody rows={rows}/>
+  										    <FlexBody rows={rows}/>
 									      </FlexTable>}
 				</Paper>
 	}
