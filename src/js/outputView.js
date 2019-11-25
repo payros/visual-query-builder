@@ -110,12 +110,12 @@ class ResultsTable extends React.Component {
     const showMsg = !this.state.dragging && !this.state.loading && !resultsStore.getShowTable();
 
     if(this.state.dragging){
+      const idx = headerCells.length
       headerCells.push(<FlexCell>{this.state.dragging}</FlexCell>)
-      groupCells.push(<GroupCell column={{name:this.state.dragging, type:Utils.getTypeFromHeader(this.state.dragging, allColumns, false)}}/>)
+      groupCells.push(<GroupCell idx={idx} column={{name:this.state.dragging, type:Utils.getTypeFromHeader(this.state.dragging, allColumns, false)}}/>)
       filterCells.push(<FilterCell column={{name:this.state.dragging, type:Utils.getTypeFromHeader(this.state.dragging, allColumns, true)}}/>)
-      orderCells.push(<OrderCell column={{name:this.state.dragging, type:Utils.getTypeFromHeader(this.state.dragging, allColumns, false)}}/>)
+      orderCells.push(<OrderCell idx={idx} column={{name:this.state.dragging, type:Utils.getTypeFromHeader(this.state.dragging, allColumns, false)}}/>)
       rows.length ? rows.forEach(r => r.push("")) : rows = [[""]]
-      console.log("rows", rows.length)
     }
 
     return  <Paper onDragOver={this.handleDragOver} onDrop={(ev) => this.handleDrop(ev)}>

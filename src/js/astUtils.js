@@ -288,7 +288,9 @@ astUtils.removeAllOrderByColumns = function(tree) {
 
 astUtils.getOrderByColumnIdx = function(tree, colIdx) {
     if(tree === null || tree.value.orderBy == null) return {order:null, sort:null}
-    const colName = astUtils.getColumns(tree, [], true)[colIdx].toLowerCase()
+    const col = astUtils.getColumns(tree, [], true)[colIdx]
+    if(!col) return {order:null, sort:null}
+    const colName = col.toLowerCase()
     const sortObjs = tree.value.orderBy.value.reduce((arr, c, i) => {
       if(funcToString(c.value).toLowerCase() === colName) arr.push({order:i, sort:c.sortOpt})
       return arr
