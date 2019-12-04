@@ -163,10 +163,10 @@ function updateTables(tree,newTables) {
 
 /* ------- GET FUNCTIONS ------- */
 
-//Get all columns in the select query tree with the table prefix and without being expanded
+//Get all columns in the select or group by query tree with the table prefix and without being expanded
 astUtils.getRawColumns = function(tree, columnList){
-  if(tree === null) return columnList
-  return tree.value.selectItems.value.reduce((arr, curr) => {
+  if(typeof tree === "undefined" || tree === null) return columnList
+  return tree.reduce((arr, curr) => {
         if(curr.type === "Identifier"){
           arr.push(curr.value)
         } else if (curr.type === "FunctionCall") {
@@ -177,7 +177,7 @@ astUtils.getRawColumns = function(tree, columnList){
 }
 
 //Get all columns in a select query ast tree without the table. prefix
-astUtils.getColumns = function(tree, columnList, wrap){
+astUtils.getColumns = function(tree, columnList, wrap, withPrefix){
     if(tree === null) return columnList
     const schema = schemaStore.getSchema()
     const currTables = astUtils.getTables(tree, [])
@@ -191,8 +191,8 @@ astUtils.getColumns = function(tree, columnList, wrap){
             arr = currTables.reduce((arr, tbl) => schema[tbl] ? arr.concat(schema[tbl].map(c => c.name)) : arr, arr)
         //Now check if it matches "table.*"
         } else if (curr.value.match(/[^\.]+\.\*$/) !== null){
-            //Add the colmns from that table to the array
-            if(schema[vals[0]]) arr = arr.concat(schema[vals[0]].map(c => c.name))
+            //Add the columns from that table to the array (with the prefix if withPrefix is true)
+            if(schema[vals[0]]) arr = arr.concat(schema[vals[0]].map(c => withPrefix ? vals[0] + "." + c.name : c.name))
         } else {
             //Just add the single column
             arr.push(vals[vals.length-1])
@@ -499,7 +499,7 @@ astUtils.addAllGrouping = function(tree){
     const schema = schemaStore.getSchema()
     const allColumns = Object.keys(schema).reduce((arr, table) => arr.concat(schema[table]), [])
     let newTree = JSON.parse(JSON.stringify(tree))
-    let columns = astUtils.getColumns(newTree, [], true)
+    let columns = astUtils.getColumns(newTree, [], true, true)
 
     // Add the column from the group by array
     if(newTree.value.groupBy === null) {
@@ -507,7 +507,7 @@ astUtils.addAllGrouping = function(tree){
     }
 
     let groupedColumns =  newTree.value.groupBy.value.map(c => c.value.value)
-
+    console.log("columns", columns)
     //Loop through each column and add them to the group if they aren't there already
     columns.forEach(column => {
         const funcMatch = column.match(/([a-zA-Z]+)\((.+)\)/)
@@ -675,7 +675,7 @@ astUtils.addSelectColumn = function(tree, column, table) {
     newTree.value.selectItems.value = newColumns.map(mapColString)
 
     //Now add grouping if necessary
-    if(schemaStore.getGrouping()) newTree = astUtils.addAllGrouping(newTree)
+    if(schemaStore.getGrouping() || newTree.value.groupBy !== null) newTree = astUtils.addAllGrouping(newTree)
 
     return newTree
 }
