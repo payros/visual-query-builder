@@ -18,6 +18,7 @@ class SqlForm extends React.Component {
     constructor(props) {
         super(props);
         this.requestTimeout = null;
+        this.parseTimeout = null;
         this.query = queryStore.getQueryString()
         this.state = { html:queryStore.getQueryHTML(), placeholder:this.query.length ? ">" : "> Type SQL Query"};
         this.delay = 1500;
@@ -70,7 +71,8 @@ class SqlForm extends React.Component {
         const query = Utils.getStringFromHTML(event.target.value)
         const HTML = queryStore.getQueryHTML(query)
         // Manually set the caret position to avoid making it jump
-        this.safelyUpdateHTML(HTML)
+        if(this.parseTimeout) clearTimeout(this.parseTimeout);
+        this.parseTimeout = setTimeout(() => this.safelyUpdateHTML(HTML), this.delay/3);
         //Now fetch new results based on the updated query
         this.query = query;
         if(this.requestTimeout) clearTimeout(this.requestTimeout);
