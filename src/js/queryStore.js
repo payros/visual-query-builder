@@ -215,19 +215,25 @@ class QueryStore extends EventEmitter {
       optional.clause =  queryMatch[9+offset] ? queryMatch[9+offset] : queryMatch[7+offset] ? queryMatch[7+offset] : '';
     })
 
-    // Now let's add color the columns
+    // Now let's add color to the columns
     if(queryTree) {
-        //First parse the query and get the raw columns
-        let currColumns = ast.getRawColumns(queryTree, [])
-        // Now join regular columns with expanded columns
-        currColumns = ast.getColumns(queryTree, currColumns, true)
-        //Finally, turn it into a string that can be used in the regex
-        currColumns = currColumns.reduce((str, c) => str + "|" + c,  "").substring(1).replace('*', '\\*')
-        let colRegex = new RegExp('(' + currColumns + ')', 'gi')
-        selectClause = selectClause.replace(/&nbsp;/g, ' ').replace(colRegex, '<span class="column select">$1</span>').replace(/\s(?![^<]*>)/g, '&nbsp;');
-        optionalClauses.forEach((optional, i) => {
-          optional.clause = optional.clause.replace(/&nbsp;/g, ' ').replace(colRegex, '<span class="column ' + optional.class + '">$1</span>').replace(/\s(?![^<]*>)/g, '&nbsp;');
-        })
+      let currColumns = []
+      //First get the raw group by columns
+      // if(queryTree.value && queryTree.value.groupBy) currColumns = ast.getRawColumns(queryTree.value.groupBy.value.map(c => c.value), currColumns)
+      //Then get the raw order by columns
+      // if(queryTree.value && queryTree.value.orderBy) currColumns = ast.getRawColumns(queryTree.value.orderBy.value.map(c => c.value), currColumns)
+      //Now get the raw select columns
+      if(queryTree.value && queryTree.value.selectItems) currColumns = ast.getRawColumns(queryTree.value.selectItems.value, currColumns).map(c => {let arr = c.split('.'); return arr[arr.length-1]})
+      // Now join regular columns with expanded columns
+      currColumns = ast.getColumns(queryTree, currColumns, true)
+      //Finally, turn it into a string that can be used in the regex
+      currColumns = currColumns.reduce((str, c) => str + "|" + c,  "").substring(1).replace('*', '\\*')
+      let colRegex = new RegExp('(\\s|\\.)(' + currColumns + ')(\\s|,|$)', 'gi')
+      console.log(colRegex)
+      selectClause = selectClause.replace(/&nbsp;/g, ' ').replace(colRegex, '$1<span class="column select">$2</span>$3').replace(/\s(?![^<]*>)/g, '&nbsp;');
+      optionalClauses.forEach((optional, i) => {
+        optional.clause = optional.clause.replace(/&nbsp;/g, ' ').replace(colRegex, '$1<span class="column ' + optional.class + '">$2</span>$3').replace(/\s(?![^<]*>)/g, '&nbsp;');
+      })
     }
 
     //Finally, let's color the aggregate functions
