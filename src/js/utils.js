@@ -109,16 +109,31 @@ export default  {
       return [cum_length[1], cum_length[0]];
     },
     setCaretPosition:(elem, pos) => {
-        if (pos >= 0) {
-            let selection = window.getSelection();
-            let range = createRange(elem.parentNode, { count: pos+1 });
+      if (pos >= 0) {
+          let selection = window.getSelection();
+          let range = createRange(elem.parentNode, { count: pos+1 });
 
-            if (range) {
-                range.collapse(false);
-                selection.removeAllRanges();
-                selection.addRange(range);
-            }
-        }
+          if (range) {
+              range.collapse(false);
+              selection.removeAllRanges();
+              selection.addRange(range);
+          }
+      }
+    },
+    humanReadableOrdering:(col) => {
+      if(col === null || isNaN(col)) return color
+      if(col === 1) return "primary"
+      if(col === 2) return "secondary"
+      switch(col % 10){
+        case 1:
+          return col + (col === 11 ? "th" : "st")
+        case 2:
+          return col + (col === 12 ? "th" : "nd")
+        case 3:
+          return col + (col === 13 ? "th" : "rd")
+        default:
+          return col + "th"
+      }
     },
     //Filter an array by a value matching certain properties
     filterByProps:(arr, val, props) => arr.filter(o => props.reduce((bool,prop) => bool = bool || (o[prop] && o[prop].toLowerCase().indexOf(val.toLowerCase()) > -1), false)),

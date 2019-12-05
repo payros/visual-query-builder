@@ -252,7 +252,7 @@ class OrderCell extends React.Component {
     }
 
 	render(){
-		const numberOptions = [...Array(this.props.colNum).keys()].map(i => <option value={i} >{i+1}</option>)
+		const numberOptions = [...Array(this.props.colNum).keys()].map(i => <option value={i}>{Utils.humanReadableOrdering(i+1)}</option>)
 		return <FlexCell className="order" {...this.props} >
 					<NativeSelect value={this.state.order} onChange={(ev) => this.handleChange(ev)} inputProps={{ name: 'order' }}>
 						<option value="" >unordered</option>
