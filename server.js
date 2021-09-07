@@ -4,7 +4,10 @@ const app = express()
 require('dotenv').config()
 const env = process.env
 const pool = new Pool({
-  connectionString: env.DATABASE_URL
+  connectionString: env.DATABASE_URL,
+  ssl: {
+  	rejectUnauthorized: false
+  }
 })
 
 if(process.argv.length > 2 && process.argv[2] === 'prod') {
